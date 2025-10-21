@@ -30,7 +30,7 @@ else:
     winreg = None
     BridgeConfig = None
 
-# SSL uyarılarını gizle (mitmproxy kullanırken)
+# Suppress SSL warnings when using mitmproxy
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout,
                              QWidget, QPushButton, QTableWidget, QTableWidgetItem,
@@ -66,7 +66,7 @@ def get_os_info():
 
 
 def load_stylesheet(app):
-    """Modern, kompakt QSS stilini uygular (varsa)."""
+    """Apply the modern compact QSS stylesheet if it exists."""
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         style_path = os.path.join(base_dir, "style.qss")
@@ -83,7 +83,7 @@ class AccountManager:
         self.init_database()
 
     def init_database(self):
-        """Veritabanını başlat ve tabloları oluştur"""
+        """Initialize the database and create required tables"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
@@ -96,18 +96,18 @@ class AccountManager:
             )
         ''')
 
-        # Mevcut tabloya health_status sütunu ekle (eğer yoksa)
+        # Add health_status column if it does not exist
         try:
             cursor.execute('ALTER TABLE accounts ADD COLUMN health_status TEXT DEFAULT "healthy"')
         except sqlite3.OperationalError:
-            # Sütun zaten var
+            # Column already exists
             pass
 
         # Add limit_info column if it doesn't exist
         try:
             cursor.execute('ALTER TABLE accounts ADD COLUMN limit_info TEXT DEFAULT "Not Updated"')
         except sqlite3.OperationalError:
-            # Sütun zaten var
+            # Column already exists
             pass
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS proxy_settings (
@@ -116,7 +116,7 @@ class AccountManager:
             )
         ''')
 
-        # Sertifika onay durumu için varsayılan değer ekle
+        # Insert default value for certificate approval status
         cursor.execute('''
             INSERT OR IGNORE INTO proxy_settings (key, value)
             VALUES ('certificate_approved', 'false')
@@ -125,7 +125,7 @@ class AccountManager:
         conn.close()
 
     def add_account(self, account_json):
-        """Hesap ekle"""
+        """Add an account from JSON data"""
         try:
             account_data = json.loads(account_json)
             email = account_data.get('email')
@@ -148,7 +148,7 @@ class AccountManager:
             return False, f"{_('error')}: {str(e)}"
 
     def get_accounts(self):
-        """Tüm hesapları getir"""
+        """Return all stored accounts"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('SELECT email, account_data FROM accounts ORDER BY email')
@@ -157,7 +157,7 @@ class AccountManager:
         return accounts
 
     def get_accounts_with_health(self):
-        """Tüm hesapları sağlık durumu ile birlikte getir"""
+        """Return all accounts including their health status"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('SELECT email, account_data, health_status FROM accounts ORDER BY email')
@@ -166,7 +166,7 @@ class AccountManager:
         return accounts
 
     def update_account_health(self, email, health_status):
-        """Hesabın sağlık durumunu güncelle"""
+        """Update the stored health status for an account"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -182,7 +182,7 @@ class AccountManager:
             return False
 
     def update_account_token(self, email, new_token_data):
-        """Hesabın token bilgilerini güncelle"""
+        """Update token details for an account"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -206,7 +206,7 @@ class AccountManager:
             return False
 
     def update_account(self, email, updated_json):
-        """Hesabın tüm bilgilerini güncelle (JSON string olarak)"""
+        """Replace all account data using a JSON string"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -222,7 +222,7 @@ class AccountManager:
             return False
 
     def set_active_account(self, email):
-        """Aktif hesabı ayarla"""
+        """Mark an account as active"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -238,7 +238,7 @@ class AccountManager:
             return False
 
     def get_active_account(self):
-        """Aktif hesabı getir"""
+        """Return the currently active account"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -250,7 +250,7 @@ class AccountManager:
             return None
 
     def clear_active_account(self):
-        """Aktif hesabı temizle"""
+        """Clear the active account flag"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -263,15 +263,15 @@ class AccountManager:
             return False
 
     def delete_account(self, email):
-        """Hesabı sil"""
+        """Delete an account"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            # Hesabı sil
+            # Remove the account from the table
             cursor.execute('DELETE FROM accounts WHERE email = ?', (email,))
 
-            # Eğer silinen hesap aktif hesapsa, aktif hesabı da temizle
+            # If the deleted account was active, clear the active account entry
             cursor.execute('SELECT value FROM proxy_settings WHERE key = ?', ('active_account',))
             result = cursor.fetchone()
             if result and result[0] == email:
@@ -285,7 +285,7 @@ class AccountManager:
             return False
 
     def update_account_limit_info(self, email, limit_info):
-        """Hesabın limit bilgilerini güncelle"""
+        """Update cached limit information for an account"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -301,7 +301,7 @@ class AccountManager:
             return False
 
     def get_accounts_with_health_and_limits(self):
-        """Tüm hesapları sağlık durumu ve limit bilgisi ile birlikte getir"""
+        """Return all accounts with health status and limit information"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('SELECT email, account_data, health_status, limit_info FROM accounts ORDER BY email')
@@ -310,7 +310,7 @@ class AccountManager:
         return accounts
 
     def is_certificate_approved(self):
-        """Sertifika onayının daha önce verilip verilmediğini kontrol et"""
+        """Check whether certificate approval was previously recorded"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -322,7 +322,7 @@ class AccountManager:
             return False
 
     def set_certificate_approved(self, approved=True):
-        """Sertifika onayını veritabanına kaydet"""
+        """Persist certificate approval state in the database"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -702,7 +702,7 @@ ProxyManager = ProxyManager
 
 
 class CertificateManager:
-    """Mitmproxy sertifika yönetimi"""
+    """Manage mitmproxy certificate generation and installation"""
 
     def __init__(self):
         self.mitmproxy_dir = Path.home() / ".mitmproxy"
@@ -710,11 +710,11 @@ class CertificateManager:
         self.cert_file = self.mitmproxy_dir / ("mitmproxy-ca-cert.cer" if IS_WINDOWS else "mitmproxy-ca-cert.pem")
 
     def check_certificate_exists(self):
-        """Sertifika dosyası var mı kontrol et"""
+        """Return True if the certificate file exists"""
         return self.cert_file.exists()
 
     def get_certificate_path(self):
-        """Sertifika dosya yolunu döndür"""
+        """Return the certificate file path as a string"""
         return str(self.cert_file)
 
     def verify_certificate_trust_macos(self):
@@ -795,7 +795,7 @@ class CertificateManager:
 
 
     def install_certificate_automatically(self):
-        """Sertifikayı otomatik olarak sisteme kur (Windows). Linux'ta sadece yol göster."""
+        """Install the certificate automatically (Windows) or guide the user (Linux)"""
         try:
             cert_path = self.get_certificate_path()
             if not self.check_certificate_exists():
@@ -805,7 +805,7 @@ class CertificateManager:
             print(_('cert_installing'))
 
             if IS_WINDOWS:
-                # certutil komutu ile sertifikayı root store'a ekle
+                # Add the certificate to the root store with certutil
                 cmd = ["certutil", "-addstore", "root", cert_path]
                 result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
                 if result.returncode == 0:
@@ -896,18 +896,18 @@ class CertificateManager:
 
 
 class MitmProxyManager:
-    """Mitmproxy sürecini yönetir"""
+    """Manage mitmproxy process lifecycle and configuration"""
 
     def __init__(self):
         self.process = None
         self.cmd_process_handle = None  # Track CMD window for cleanup
         self.port = 8080  # Orijinal port
-        self.script_path = "warp_proxy_script.py"  # Asıl script'i kullanıyoruz
+        self.script_path = "warp_proxy_script.py"  # Use the main proxy script
         self.debug_mode = True
         self.cert_manager = CertificateManager()
 
     def start(self, parent_window=None):
-        """Mitmproxy'yi başlat"""
+        """Start the mitmproxy process"""
         try:
             if self.is_running():
                 print("Mitmproxy is already running")
@@ -919,11 +919,11 @@ class MitmProxyManager:
                 print("❌ Mitmproxy installation check failed")
                 return False
 
-            # İlk çalıştırmada sertifika kontrolü yap
+            # On first run ensure the certificate exists
             if not self.cert_manager.check_certificate_exists():
                 print(_('cert_creating'))
 
-                # Sertifika oluşturmak için kısa bir mitmproxy çalıştır
+                # Run mitmproxy briefly to generate the certificate
                 temp_cmd = ["mitmdump", "--set", "confdir=~/.mitmproxy", "-q"]
                 try:
                     if parent_window:
@@ -934,7 +934,7 @@ class MitmProxyManager:
                         popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
                     temp_process = subprocess.Popen(temp_cmd, **popen_kwargs)
 
-                    # 5 saniye bekle ve süreci sonlandır
+                    # Wait five seconds and then stop the process
                     time.sleep(5)
                     temp_process.terminate()
                     temp_process.wait(timeout=3)
@@ -944,7 +944,7 @@ class MitmProxyManager:
                 except Exception as e:
                     print(f"❌ Certificate generation error: {e}")
 
-                # Sertifika oluştu mu kontrol et
+                # Verify that the certificate file was created
                 if not self.cert_manager.check_certificate_exists():
                     if parent_window:
                         parent_window.status_bar.showMessage(_('cert_creation_failed'), 5000)
@@ -956,35 +956,35 @@ class MitmProxyManager:
             if parent_window and not parent_window.account_manager.is_certificate_approved():
                 print(_('cert_installing'))
 
-                # Sertifikayı otomatik kur
+                # Attempt to install the certificate automatically
                 if self.cert_manager.install_certificate_automatically():
-                    # Sertifika başarıyla kurulduysa onayı kaydet
+                    # Record approval if installation succeeded
                     parent_window.account_manager.set_certificate_approved(True)
                     parent_window.status_bar.showMessage(_('cert_installed_success'), 3000)
 
-                    # macOS'ta ek olarak sertifika güvenini kontrol et
+                    # On macOS additionally validate certificate trust
                     if IS_MACOS:
                         if not self.cert_manager.verify_certificate_trust_macos():
                             print("⚠️ Certificate may not be fully trusted. Manual verification recommended.")
                             parent_window.status_bar.showMessage("Certificate installed but may need manual trust setup", 5000)
                 else:
-                    # Otomatik kurulum başarısız - manuel kurulum dialogu göster
+                    # If automatic install fails show the manual install dialog
                     dialog_result = self.show_manual_certificate_dialog(parent_window)
                     if dialog_result:
-                        # Kullanıcı kurulumu tamamladı dedi
+                        # User confirmed that installation finished
                         parent_window.account_manager.set_certificate_approved(True)
                     else:
                         return False
 
 
-            # Mitmproxy komutunu hazırla
+            # Build the mitmproxy command
             cmd = [
                 "mitmdump",
                 "--listen-host", "127.0.0.1",  # IPv4'te dinle
                 "-p", str(self.port),
                 "-s", self.script_path,
                 "--set", "confdir=~/.mitmproxy",
-                "--set", "keep_host_header=true",    # Host header'ı koru
+                "--set", "keep_host_header=true",    # Preserve the original host header
             ]
 
             print(f"Mitmproxy komutu: {' '.join(cmd)}")
@@ -1180,7 +1180,7 @@ class MitmProxyManager:
                 print("Mitmproxy durduruldu")
                 return True
 
-            # Eğer süreç referansı yoksa PID ile bul ve durdur
+            # If no process reference is stored, find by PID and terminate
             for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
                 try:
                     if 'mitmdump' in proc.info['name'] and str(self.port) in ' '.join(proc.info['cmdline']):
@@ -1197,7 +1197,7 @@ class MitmProxyManager:
             return False
 
     def is_running(self):
-        """Mitmproxy'nin çalışıp çalışmadığını kontrol et"""
+        """Return True if the mitmproxy process is running"""
         try:
             if self.process and self.process.poll() is None:
                 return True
@@ -1214,7 +1214,7 @@ class MitmProxyManager:
             return False
 
     def get_proxy_url(self):
-        """Proxy URL'ini döndür"""
+        """Return the local proxy URL"""
         return f"127.0.0.1:{self.port}"
 
     def diagnose_tls_issues(self):
@@ -1256,7 +1256,7 @@ class MitmProxyManager:
         return True
 
     def is_port_open(self, host, port):
-        """Port'un açık olup olmadığını kontrol et"""
+        """Check whether the given host/port is reachable"""
         import socket
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1268,7 +1268,7 @@ class MitmProxyManager:
             return False
 
     def show_manual_certificate_dialog(self, parent_window):
-        """Manuel sertifika kurulum dialogu göster"""
+        """Display the manual certificate installation dialog"""
         try:
             dialog = ManualCertificateDialog(self.cert_manager.get_certificate_path(), parent_window)
             return dialog.exec_() == QDialog.Accepted
@@ -1278,7 +1278,7 @@ class MitmProxyManager:
 
 
 class ManualCertificateDialog(QDialog):
-    """Manuel sertifika kurulum dialogu"""
+    """Dialog guiding the user through manual certificate installation"""
 
     def __init__(self, cert_path, parent=None):
         super().__init__(parent)
@@ -1293,19 +1293,19 @@ class ManualCertificateDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
 
-        # Başlık
+        # Title label
         title = QLabel(_('cert_manual_title'))
         title.setFont(QFont("Arial", 14, QFont.Bold))
         title.setStyleSheet("color: #d32f2f; margin-bottom: 10px;")
         layout.addWidget(title)
 
-        # Açıklama
+        # Instruction text
         explanation = QLabel(_('cert_manual_explanation'))
         explanation.setWordWrap(True)
         explanation.setStyleSheet("background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffeaa7;")
         layout.addWidget(explanation)
 
-        # Sertifika yolu
+        # Certificate path label and display
         path_label = QLabel(_('cert_manual_path'))
         path_label.setFont(QFont("Arial", 10, QFont.Bold))
         layout.addWidget(path_label)
@@ -1322,17 +1322,17 @@ class ManualCertificateDialog(QDialog):
         path_display.setTextInteractionFlags(Qt.TextSelectableByMouse)
         layout.addWidget(path_display)
 
-        # Adımlar
+        # Installation steps
         steps_label = QLabel(_('cert_manual_steps'))
         steps_label.setWordWrap(True)
         steps_label.setStyleSheet("background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd;")
         layout.addWidget(steps_label)
 
-        # Butonlar
+        # Action buttons
         button_layout = QHBoxLayout()
         button_layout.setSpacing(10)
 
-        # Klasör aç butonu
+        # Button to open the certificate folder directly
         self.open_folder_button = QPushButton(_('cert_open_folder'))
         self.open_folder_button.setStyleSheet("""
             QPushButton {
@@ -1350,7 +1350,7 @@ class ManualCertificateDialog(QDialog):
         """)
         self.open_folder_button.clicked.connect(self.open_certificate_folder)
 
-        # Kurulum tamamlandı butonu
+        # Button confirming certificate install completion
         self.completed_button = QPushButton(_('cert_manual_complete'))
         self.completed_button.setStyleSheet("""
             QPushButton {
@@ -1368,7 +1368,7 @@ class ManualCertificateDialog(QDialog):
         """)
         self.completed_button.clicked.connect(self.accept)
 
-        # İptal butonu
+        # Cancel button
         cancel_button = QPushButton(_('cancel'))
         cancel_button.setStyleSheet("""
             QPushButton {
@@ -1413,7 +1413,7 @@ class ManualCertificateDialog(QDialog):
 
 
 class TokenWorker(QThread):
-    """Tekil token yenileme işlemlerini arka planda yapar"""
+    """Refresh a single account token in the background"""
     progress = pyqtSignal(str)
     finished = pyqtSignal(bool, str)  # success, message
     error = pyqtSignal(str)
@@ -1427,20 +1427,20 @@ class TokenWorker(QThread):
 
     def run(self):
         try:
-            self.progress.emit(f"Token yenileniyor: {self.email}")
+            self.progress.emit(f"Refreshing token for {self.email}")
 
             if self.refresh_token():
                 self.account_manager.update_account_health(self.email, 'healthy')
-                self.finished.emit(True, f"{self.email} tokeni başarıyla yenilendi")
+                self.finished.emit(True, f"Token refreshed successfully for {self.email}")
             else:
                 self.account_manager.update_account_health(self.email, 'unhealthy')
-                self.finished.emit(False, f"{self.email} tokeni yenilenemedi")
+                self.finished.emit(False, f"Token refresh failed for {self.email}")
 
         except Exception as e:
-            self.error.emit(f"Token yenileme hatası: {str(e)}")
+            self.error.emit(f"Token refresh error: {str(e)}")
 
     def refresh_token(self):
-        """Firebase token yenileme"""
+        """Refresh the Firebase token for this account"""
         try:
             refresh_token = self.account_data['stsTokenManager']['refreshToken']
             api_key = self.account_data['apiKey']
@@ -1455,7 +1455,7 @@ class TokenWorker(QThread):
                 'refresh_token': refresh_token
             }
 
-            # Proxy kullanmadan direkt bağlan
+            # Connect without using a proxy
             proxies = {'http': None, 'https': None} if self.proxy_enabled else None
             response = requests.post(url, json=data, headers=headers, timeout=30,
                                    verify=not self.proxy_enabled, proxies=proxies)
@@ -1476,7 +1476,7 @@ class TokenWorker(QThread):
 
 
 class TokenRefreshWorker(QThread):
-    """Token yenileme ve limit getirme işlemlerini arka planda yapar"""
+    """Refresh tokens and fetch limit info for many accounts in the background"""
     progress = pyqtSignal(int, str)
     finished = pyqtSignal(list)
     error = pyqtSignal(str)
@@ -1495,7 +1495,7 @@ class TokenRefreshWorker(QThread):
             try:
                 self.progress.emit(int((i / total_accounts) * 100), _('processing_account', email))
 
-                # Banlanmış hesapları hariç tut
+                # Skip banned accounts
                 if health_status == _('status_banned_key'):
                     self.account_manager.update_account_limit_info(email, _('status_na'))
                     results.append((email, _('status_banned'), _('status_na')))
@@ -1503,39 +1503,39 @@ class TokenRefreshWorker(QThread):
 
                 account_data = json.loads(account_json)
 
-                # Token süresini kontrol et
+                # Check token expiration
                 expiration_time = account_data['stsTokenManager']['expirationTime']
                 current_time = int(time.time() * 1000)
 
                 if current_time >= expiration_time:
-                    # Token süresi dolmuş, yenile
+                    # Token expired, attempt a refresh
                     self.progress.emit(int((i / total_accounts) * 100), _('refreshing_token', email))
                     if not self.refresh_token(email, account_data):
-                        # Token yenilenemedi - sağlıksız olarak işaretle
+                        # Token refresh failed; mark account unhealthy
                         self.account_manager.update_account_health(email, _('status_unhealthy'))
                         self.account_manager.update_account_limit_info(email, _('status_na'))
                         results.append((email, _('token_refresh_failed', email), _('status_na')))
                         continue
 
-                    # Güncellenmiş account_data'yı al
+                    # Pull updated account data from the database
                     updated_accounts = self.account_manager.get_accounts()
                     for updated_email, updated_json in updated_accounts:
                         if updated_email == email:
                             account_data = json.loads(updated_json)
                             break
 
-                # Limit bilgilerini getir
+                # Fetch limit information
                 limit_info = self.get_limit_info(account_data)
                 if limit_info:
                     used = limit_info.get('requestsUsedSinceLastRefresh', 0)
                     total = limit_info.get('requestLimit', 0)
                     limit_text = f"{used}/{total}"
-                    # Başarılı - sağlıklı olarak işaretle ve limit bilgisini kaydet
+                    # Successful update: mark healthy and store limit data
                     self.account_manager.update_account_health(email, _('status_healthy'))
                     self.account_manager.update_account_limit_info(email, limit_text)
                     results.append((email, _('success'), limit_text))
                 else:
-                    # Limit bilgisi alınamadı - sağlıksız olarak işaretle
+                    # Limit information unavailable; mark unhealthy
                     self.account_manager.update_account_health(email, _('status_unhealthy'))
                     self.account_manager.update_account_limit_info(email, _('status_na'))
                     results.append((email, _('limit_info_failed'), _('status_na')))
@@ -1547,7 +1547,7 @@ class TokenRefreshWorker(QThread):
         self.finished.emit(results)
 
     def refresh_token(self, email, account_data):
-        """Firebase token yenileme"""
+        """Refresh the Firebase token for the given account"""
         try:
             refresh_token = account_data['stsTokenManager']['refreshToken']
             api_key = account_data['apiKey']
@@ -1555,14 +1555,14 @@ class TokenRefreshWorker(QThread):
             url = f"https://securetoken.googleapis.com/v1/token?key={api_key}"
             headers = {
                 'Content-Type': 'application/json',
-                'User-Agent': 'WarpAccountManager/1.0'  # Özel User-Agent ile işaretliyoruz
+                'User-Agent': 'WarpAccountManager/1.0'  # Identify requests originating from the manager
             }
             data = {
                 'grant_type': 'refresh_token',
                 'refresh_token': refresh_token
             }
 
-            # Proxy kullanmadan direkt bağlan
+            # Connect without using a proxy when not required
             proxies = {'http': None, 'https': None} if self.proxy_enabled else None
             response = requests.post(url, json=data, headers=headers, timeout=30,
                                    verify=not self.proxy_enabled, proxies=proxies)
@@ -1599,7 +1599,7 @@ class TokenRefreshWorker(QThread):
                 'X-Warp-Os-Version': os_info['version'],
                 'Accept': '*/*',
                 'Accept-Encoding': 'gzip, deflate, br',
-                'X-Warp-Manager-Request': 'true'  # Request from our application
+                'X-Warp-Manager-Request': 'true'  # Identify request as originating from our application
             }
 
             query = """
@@ -1675,7 +1675,7 @@ class TokenRefreshWorker(QThread):
                 "operationName": "GetRequestLimitInfo"
             }
 
-            # Proxy kullanmadan direkt bağlan
+            # Connect without using a proxy
             proxies = {'http': None, 'https': None} if self.proxy_enabled else None
             response = requests.post(url, headers=headers, json=payload, timeout=30,
                                    verify=not self.proxy_enabled, proxies=proxies)
@@ -1700,29 +1700,29 @@ class AddAccountDialog(QDialog):
         self.init_ui()
 
     def init_ui(self):
-        # Ana layout
+        # Primary layout
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(12, 12, 12, 12)
         main_layout.setSpacing(12)
 
-        # Tab widget oluştur
+        # Create tab widget containing manual/automatic tabs
         self.tab_widget = QTabWidget()
 
-        # Manuel tab
+        # Manual entry tab
         manual_tab = self.create_manual_tab()
         self.tab_widget.addTab(manual_tab, _('tab_manual'))
 
-        # Otomatik tab
+        # Automatic entry tab
         auto_tab = self.create_auto_tab()
         self.tab_widget.addTab(auto_tab, _('tab_auto'))
 
         main_layout.addWidget(self.tab_widget)
 
-        # Ana butonlar (her iki tab için ortak)
+        # Shared buttons for both tabs
         button_layout = QHBoxLayout()
         button_layout.setSpacing(8)
 
-        # Hesap oluşturma butonu (sol taraf)
+        # Button linking to account creation page (left side)
         self.create_account_button = QPushButton(_('create_account'))
         self.create_account_button.setMinimumHeight(28)
         self.create_account_button.setStyleSheet("""
@@ -1757,36 +1757,36 @@ class AddAccountDialog(QDialog):
         self.setLayout(main_layout)
 
     def create_manual_tab(self):
-        """Manuel JSON ekleme tabını oluştur"""
+        """Create the manual JSON entry tab"""
         tab_widget = QWidget()
         layout = QVBoxLayout()
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(12)
 
-        # Başlık
+        # Section title
         title_label = QLabel(_('manual_method_title'))
         title_label.setFont(QFont("Arial", 12, QFont.Bold))
         layout.addWidget(title_label)
 
-        # Ana layout (sol-sağ)
+        # Main horizontal layout
         content_layout = QHBoxLayout()
         content_layout.setSpacing(12)
 
-        # Sol panel (form)
+        # Left panel with input form
         left_panel = QVBoxLayout()
         left_panel.setSpacing(8)
 
-        # Açıklama
+        # Instruction label
         instruction_label = QLabel(_('add_account_instruction'))
         instruction_label.setFont(QFont("Arial", 10))
         left_panel.addWidget(instruction_label)
 
-        # Text edit
+        # JSON text input
         self.text_edit = QTextEdit()
         self.text_edit.setPlaceholderText(_('add_account_placeholder'))
         left_panel.addWidget(self.text_edit)
 
-        # Bilgi butonu
+        # Toggle button for info panel
         self.info_button = QPushButton(_('how_to_get_json'))
         self.info_button.setMaximumWidth(220)
         self.info_button.clicked.connect(self.toggle_info_panel)
@@ -1794,7 +1794,7 @@ class AddAccountDialog(QDialog):
 
         content_layout.addLayout(left_panel, 1)
 
-        # Sağ panel (info paneli) - başlangıçta gizli
+        # Right panel (info panel) hidden by default
         self.info_panel = self.create_info_panel()
         self.info_panel.hide()
         self.info_panel_visible = False
@@ -1805,25 +1805,25 @@ class AddAccountDialog(QDialog):
         return tab_widget
 
     def create_auto_tab(self):
-        """Chrome eklentisi otomatik ekleme tabını oluştur"""
+        """Create the Chrome extension auto-add tab"""
         tab_widget = QWidget()
         layout = QVBoxLayout()
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(12)
 
-        # Başlık
+        # Section title
         title_label = QLabel(_('auto_method_title'))
         title_label.setFont(QFont("Arial", 12, QFont.Bold))
         layout.addWidget(title_label)
 
-        # Scroll area
+        # Scroll area containing extension instructions
         scroll_area = QScrollArea()
         scroll_widget = QWidget()
         scroll_layout = QVBoxLayout()
         scroll_layout.setContentsMargins(12, 12, 12, 12)
         scroll_layout.setSpacing(16)
 
-        # Chrome eklentisi açıklaması
+        # Chrome extension description
         chrome_title = QLabel(_('chrome_extension_title'))
         chrome_title.setFont(QFont("Arial", 11, QFont.Bold))
         scroll_layout.addWidget(chrome_title)
@@ -1833,7 +1833,7 @@ class AddAccountDialog(QDialog):
         chrome_desc.setStyleSheet("QLabel { color: #666; }")
         scroll_layout.addWidget(chrome_desc)
 
-        # Adımlar
+        # Step-by-step guide container
         steps_widget = QWidget()
         steps_widget.setStyleSheet("QWidget { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; }")
         steps_layout = QVBoxLayout()
@@ -1865,7 +1865,7 @@ class AddAccountDialog(QDialog):
         return tab_widget
 
     def create_info_panel(self):
-        """Info panelini oluştur"""
+        """Construct the information panel"""
         panel = QWidget()
         panel.setMaximumWidth(400)
         panel.setStyleSheet("QWidget { background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 8px; }")
@@ -1874,12 +1874,12 @@ class AddAccountDialog(QDialog):
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
 
-        # Başlık
+        # Info panel title
         title = QLabel(_('json_info_title'))
         title.setFont(QFont("Arial", 11, QFont.Bold))
         layout.addWidget(title)
 
-        # Adımlar
+        # Steps explaining manual JSON extraction
         steps_text = f"""
 {_('step_1')}<br><br>
 {_('step_2')}<br><br>
@@ -1909,14 +1909,14 @@ class AddAccountDialog(QDialog):
     getAllReq.onsuccess = function () {
       const results = getAllReq.result;
 
-      // ilk kaydın value'sunu al
+      // get the first record's value
       const firstValue = results[0]?.value;
       console.log("Value (object):", firstValue);
 
-      // JSON string'e çevir
+      // convert to JSON string
       const valueString = JSON.stringify(firstValue, null, 2);
 
-      // buton ekle
+      // add a button to copy the value
       const btn = document.createElement("button");
       btn.innerText = "-> Copy JSON <--";
       btn.style.position = "fixed";
@@ -1944,32 +1944,32 @@ class AddAccountDialog(QDialog):
         return panel
 
     def toggle_info_panel(self):
-        """Info panelini aç/kapat"""
+        """Toggle visibility of the information panel"""
         self.info_panel_visible = not self.info_panel_visible
 
         if self.info_panel_visible:
             self.info_panel.show()
             self.info_button.setText(_('how_to_get_json_close'))
-            # Dialog genişliğini artır
+            # Expand dialog width when showing info panel
             self.resize(1100, 500)
         else:
             self.info_panel.hide()
             self.info_button.setText(_('how_to_get_json'))
-            # Dialog genişliğini eski haline getir
+            # Restore original dialog width
             self.resize(700, 500)
 
     def copy_javascript_code(self):
-        """JavaScript kodunu panoya kopyala"""
+        """Copy the helper JavaScript to the clipboard"""
         try:
             from PyQt5.QtWidgets import QApplication
             clipboard = QApplication.clipboard()
             clipboard.setText(self.javascript_code)
 
-            # Buton metnini geçici olarak değiştir
+            # Temporarily update button text
             original_text = self.copy_button.text()
             self.copy_button.setText(_('copied'))
 
-            # 2 saniye sonra eski metne dön
+            # Restore original button text after two seconds
             QTimer.singleShot(2000, lambda: self.copy_button.setText(original_text))
 
         except Exception as e:
@@ -1977,7 +1977,7 @@ class AddAccountDialog(QDialog):
             QTimer.singleShot(2000, lambda: self.copy_button.setText(_('copy_javascript')))
 
     def open_account_creation_page(self):
-        """Hesap oluşturma sayfasını aç"""
+        """Open the Warp account creation page"""
         import webbrowser
         webbrowser.open("https://app.warp.dev/login/")
 
@@ -1986,7 +1986,7 @@ class AddAccountDialog(QDialog):
 
 
 class HelpDialog(QDialog):
-    """Yardım ve kullanım kılavuzu dialog'u"""
+    """Dialog presenting guidance and usage information"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -2000,14 +2000,14 @@ class HelpDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
 
-        # Başlık
+        # Dialog title
         title = QLabel(_('help_title'))
         title.setFont(QFont("Arial", 16, QFont.Bold))
         title.setStyleSheet("color: #2196F3; margin-bottom: 15px;")
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
 
-        # Scroll area için widget
+        # Scroll area with the help content
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setStyleSheet("QScrollArea { border: none; }")
@@ -2017,21 +2017,21 @@ class HelpDialog(QDialog):
         content_layout.setContentsMargins(10, 10, 10, 10)
         content_layout.setSpacing(20)
 
-        # Bölüm 1: Ne İşe Yarar?
+        # Section 1: What does it do?
         section1 = self.create_section(
             _('help_what_is'),
             _('help_what_is_content')
         )
         content_layout.addWidget(section1)
 
-        # Bölüm 2: Nasıl Çalışır?
+        # Section 2: How does it work?
         section2 = self.create_section(
             _('help_how_works'),
             _('help_how_works_content')
         )
         content_layout.addWidget(section2)
 
-        # Bölüm 3: Nasıl Kullanılır?
+        # Section 3: How to use it?
         section3 = self.create_section(
             _('help_how_to_use'),
             _('help_how_to_use_content')
@@ -2042,7 +2042,7 @@ class HelpDialog(QDialog):
         scroll_area.setWidget(content_widget)
         layout.addWidget(scroll_area)
 
-        # Kapat butonu
+        # Close button
         close_button = QPushButton(_('close'))
         close_button.setStyleSheet("""
             QPushButton {
@@ -2069,7 +2069,7 @@ class HelpDialog(QDialog):
         self.setLayout(layout)
 
     def create_section(self, title, content):
-        """Yardım bölümü oluştur"""
+        """Create a help section widget"""
         section_widget = QWidget()
         section_widget.setStyleSheet("QWidget { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; }")
 
@@ -2077,13 +2077,13 @@ class HelpDialog(QDialog):
         section_layout.setContentsMargins(0, 0, 0, 0)
         section_layout.setSpacing(10)
 
-        # Başlık
+        # Section header label
         title_label = QLabel(title)
         title_label.setFont(QFont("Arial", 12, QFont.Bold))
         title_label.setStyleSheet("color: #333; margin-bottom: 5px;")
         section_layout.addWidget(title_label)
 
-        # İçerik
+        # Section content
         content_label = QLabel(content)
         content_label.setWordWrap(True)
         content_label.setStyleSheet("color: #555; line-height: 1.4;")
@@ -2094,7 +2094,7 @@ class HelpDialog(QDialog):
 
 
 class MainWindow(QMainWindow):
-    # Bridge hesap ekleme sinyali
+    # Signal emitted when an account is added via the bridge
     bridge_account_added = pyqtSignal(str)
 
     def __init__(self):
@@ -2103,64 +2103,64 @@ class MainWindow(QMainWindow):
         self.proxy_manager = MitmProxyManager()
         self.proxy_enabled = False
 
-        # Proxy kapalıysa aktif hesabı temizle
+        # Clear active account if proxy is disabled on Windows
         if IS_WINDOWS and ProxyManager and not ProxyManager.is_proxy_enabled():
             self.account_manager.clear_active_account()
 
-        # Bridge sinyalini slot'a bağla
+        # Connect bridge signal to update slot
         self.bridge_account_added.connect(self.refresh_table_after_bridge_add)
 
         self.init_ui()
         self.load_accounts()
 
-        # Bridge konfigürasyonu ve server başlat (UI yüklendikten sonra)
+        # Configure and start bridge components after the UI loads
         self.setup_bridge_system()
 
         # Timer for checking proxy status
         self.proxy_timer = QTimer()
         self.proxy_timer.timeout.connect(self.check_proxy_status)
-        self.proxy_timer.start(5000)  # Her 5 saniyede kontrol et
+        self.proxy_timer.start(5000)  # Check every 5 seconds
 
         # Timer for checking ban notifications
         self.ban_timer = QTimer()
         self.ban_timer.timeout.connect(self.check_ban_notifications)
-        self.ban_timer.start(1000)  # Her 1 saniyede kontrol et
+        self.ban_timer.start(1000)  # Check every second
 
         # Timer for automatic token renewal
         self.token_renewal_timer = QTimer()
         self.token_renewal_timer.timeout.connect(self.auto_renew_tokens)
-        self.token_renewal_timer.start(60000)  # Her 1 dakikada kontrol et (60000 ms)
+        self.token_renewal_timer.start(60000)  # Check every 60 seconds (60000 ms)
 
-        # Timer for active account refresh
+        # Timer for refreshing the active account
         self.active_account_refresh_timer = QTimer()
         self.active_account_refresh_timer.timeout.connect(self.refresh_active_account)
-        self.active_account_refresh_timer.start(60000)  # Her 60 saniyede aktif hesabı yenile
+        self.active_account_refresh_timer.start(60000)  # Refresh every 60 seconds
 
-        # Timer for status message reset
+        # Timer for resetting the status message
         self.status_reset_timer = QTimer()
         self.status_reset_timer.setSingleShot(True)
         self.status_reset_timer.timeout.connect(self.reset_status_message)
 
-        # İlk açılışta token kontrolü yap (hemen)
+        # Perform an initial token check immediately
         QTimer.singleShot(0, self.auto_renew_tokens)
 
-        # Token worker için değişkenler
+        # Placeholders for background token workers
         self.token_worker = None
         self.token_progress_dialog = None
 
     def setup_bridge_system(self):
-        """Bridge sistem konfigürasyonu ve server başlatma"""
+        """Configure the bridge system and start its server"""
         try:
             print("🌉 Starting bridge system...")
 
-            # Windows bridge konfigürasyonu kontrol et (Windows'ta)
+            # On Windows ensure bridge configuration is applied
             if IS_WINDOWS and BridgeConfig is not None:
                 bridge_config = BridgeConfig()
                 if not bridge_config.check_configuration():
                     print("⚙️  Configuring bridge...")
                     bridge_config.setup_bridge_config()
 
-            # Bridge server başlat (callback ile tablo yenileme)
+            # Start bridge server (refresh table via callback)
             self.bridge_server = WarpBridgeServer(
                 self.account_manager,
                 on_account_added=self.on_account_added_via_bridge
@@ -2172,70 +2172,70 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             print(f"❌ Bridge system error: {e}")
-            # Hata olsa bile uygulamaya devam et
+            # Continue running even if bridge setup fails
             self.bridge_server = None
 
     def init_ui(self):
         self.setWindowTitle(_('app_title'))
-        self.setGeometry(100, 100, 900, 650)  # Biraz daha büyük ve modern boyut
-        self.setMinimumSize(750, 500)  # Minimum boyut ayarla
+        self.setGeometry(100, 100, 900, 650)  # Slightly larger default window
+        self.setMinimumSize(750, 500)  # Enforce minimum window size
 
-        # Status bar ekle
+        # Add status bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
-                # Spacer ekle - status mesajını ortalamak için
-        spacer_label = QLabel("  ")  # Boş alan
+        # Spacer to help center-align status messages
+        spacer_label = QLabel("  ")  # Blank padding label
         self.status_bar.addWidget(spacer_label)
 
-        # Sağ köşeye Ruwis linki ekle
-        self.ruwis_label = QLabel('<a href="https://github.com/ruwiss" style="color: #2196F3; text-decoration: none; font-weight: bold;">https://github.com/ruwiss</a>')
-        self.ruwis_label.setOpenExternalLinks(True)
-        self.ruwis_label.setStyleSheet("QLabel { padding: 2px 8px; }")
-        self.status_bar.addPermanentWidget(self.ruwis_label)
+       
+        self.indokq_label = QLabel('<a href="https://github.com/Indokq" style="color: #2196F3; text-decoration: none; font-weight: bold;">https://github.com/Indokq</a>')
+        self.indokq_label.setOpenExternalLinks(True)
+        self.indokq_label.setStyleSheet("QLabel { padding: 2px 8px; }")
+        self.status_bar.addPermanentWidget(self.indokq_label)
 
-        # Varsayılan status mesajı
+        # Default status bar message
         debug_mode = os.path.exists("debug.txt")
         if debug_mode:
             self.status_bar.showMessage(_('default_status_debug'))
         else:
             self.status_bar.showMessage(_('default_status'))
 
-        # Ana widget
+        # Main container widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # Ana layout - Modern boşluklar
+        # Root layout with generous spacing
         layout = QVBoxLayout()
-        layout.setContentsMargins(16, 16, 16, 16)  # Daha geniş kenar boşlukları
-        layout.setSpacing(12)  # Daha geniş elemanlar arası boşluk
+        layout.setContentsMargins(16, 16, 16, 16)  # Wide margins
+        layout.setSpacing(12)  # Extra spacing between elements
 
-        # Üst butonlar - Modern boşluklar
+        # Top action row
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(12)  # Butonlar arası daha geniş boşluk
+        button_layout.setSpacing(12)  # Provide space between buttons
 
-        # Proxy butonları - başlat butonu artık gizli (hesap butonları ile birleştirildi)
+        # Proxy buttons (start remains hidden, functionality merged into account controls)
         self.proxy_start_button = QPushButton(_('proxy_start'))
         self.proxy_start_button.setObjectName("StartButton")
-        self.proxy_start_button.setMinimumHeight(36)  # Daha yüksek modern butonlar
+        self.proxy_start_button.setMinimumHeight(36)
         self.proxy_start_button.clicked.connect(self.start_proxy)
-        self.proxy_start_button.setVisible(False)  # Artık gizli
+        self.proxy_start_button.setVisible(False)
 
         self.proxy_stop_button = QPushButton(_('proxy_stop'))
         self.proxy_stop_button.setObjectName("StopButton")
-        self.proxy_stop_button.setMinimumHeight(36)  # Daha yüksek modern butonlar
+        self.proxy_stop_button.setMinimumHeight(36)
         self.proxy_stop_button.clicked.connect(self.stop_proxy)
-        self.proxy_stop_button.setVisible(False)  # Başlangıçta gizli
+        self.proxy_stop_button.setVisible(False)
 
-        # Diğer butonlar
+        # Additional primary buttons
         self.add_account_button = QPushButton(_('add_account'))
         self.add_account_button.setObjectName("AddButton")
-        self.add_account_button.setMinimumHeight(36)  # Daha yüksek modern butonlar
+        self.add_account_button.setMinimumHeight(36)
         self.add_account_button.clicked.connect(self.add_account)
 
         self.refresh_limits_button = QPushButton(_('refresh_limits'))
         self.refresh_limits_button.setObjectName("RefreshButton")
-        self.refresh_limits_button.setMinimumHeight(36)  # Daha yüksek modern butonlar
+        self.refresh_limits_button.setMinimumHeight(36)
         self.refresh_limits_button.clicked.connect(self.refresh_limits)
 
         button_layout.addWidget(self.proxy_stop_button)
@@ -2243,12 +2243,12 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.refresh_limits_button)
         button_layout.addStretch()
 
-        # Dil seçici
+        # Language selector
         self.language_combo = QComboBox()
-        self.language_combo.addItems(['TR', 'EN'])
-        self.language_combo.setCurrentText('TR' if get_language_manager().get_current_language() == 'tr' else 'EN')
+        self.language_combo.addItems(['ID', 'EN'])
+        self.language_combo.setCurrentText('ID' if get_language_manager().get_current_language() == 'id' else 'EN')
         self.language_combo.setFixedWidth(65)
-        self.language_combo.setFixedHeight(36)  # Modern buton yüksekliği ile uyumlu
+        self.language_combo.setFixedHeight(36)
         self.language_combo.setStyleSheet("""
             QComboBox {
                 background-color: #f5f5f5;
@@ -2285,9 +2285,9 @@ class MainWindow(QMainWindow):
         self.language_combo.currentTextChanged.connect(self.change_language)
         button_layout.addWidget(self.language_combo)
 
-        # Yardım butonu sağ tarafa
+        # Help button on the right
         self.help_button = QPushButton(_('help'))
-        self.help_button.setFixedHeight(36)  # Modern buton yüksekliği ile uyumlu
+        self.help_button.setFixedHeight(36)
         self.help_button.setStyleSheet("""
             QPushButton {
                 background-color: #f5f5f5;
@@ -2304,22 +2304,22 @@ class MainWindow(QMainWindow):
                 border-color: #bbb;
             }
         """)
-        self.help_button.setToolTip("Yardım ve Kullanım Kılavuzu")
+        self.help_button.setToolTip(_('help_title'))
         self.help_button.clicked.connect(self.show_help_dialog)
         button_layout.addWidget(self.help_button)
 
         layout.addLayout(button_layout)
 
-        # Tablo
+        # Accounts table setup
         self.table = QTableWidget()
-        self.table.setColumnCount(4)  # Durum sütunu eklendi
+        self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels([_('current'), _('email'), _('status'), _('limit')])
 
-        # Tablo görünümünü modern ve kompaktlaştır
+        # Styling for cleaner table appearance
         self.table.setAlternatingRowColors(True)
         self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
-        self.table.verticalHeader().setDefaultSectionSize(36)  # Biraz daha yüksek satırlar
+        self.table.verticalHeader().setDefaultSectionSize(36)  # Slightly taller rows for readability
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setFocusPolicy(Qt.NoFocus)
@@ -2343,34 +2343,34 @@ class MainWindow(QMainWindow):
             }
         """)
 
-        # Sağ tık menüsü ekle
+        # Enable context menu for table rows
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.show_context_menu)
 
-        # Tablo başlık ayarları
+        # Configure header resizing behavior
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Fixed)  # Durum sütunu sabit genişlik
-        header.setSectionResizeMode(1, QHeaderView.Stretch)  # Email sütunu esnek
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Status sütunu içeriğe göre
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Limit sütunu içeriğe göre
-        header.resizeSection(0, 100)  # Durum sütunu 100px genişlik (modern butonlar için)
-        header.setFixedHeight(40)  # Daha yüksek modern başlık
+        header.setSectionResizeMode(0, QHeaderView.Fixed)  # Fixed width for status button column
+        header.setSectionResizeMode(1, QHeaderView.Stretch)  # Stretch email column
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Size status column to contents
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Size limit column to contents
+        header.resizeSection(0, 100)  # Provide room for action buttons
+        header.setFixedHeight(40)  # Taller header for modern look
 
         layout.addWidget(self.table)
 
         central_widget.setLayout(layout)
 
     def load_accounts(self, preserve_limits=False):
-        """Hesapları tabloya yükle"""
+        """Populate the table with account data"""
         accounts = self.account_manager.get_accounts_with_health_and_limits()
 
         self.table.setRowCount(len(accounts))
         active_account = self.account_manager.get_active_account()
 
         for row, (email, account_json, health_status, limit_info) in enumerate(accounts):
-            # Aktivasyon butonu (Sütun 0) - Modern tasarım
+            # Activation button rendered in column 0
             activation_button = QPushButton()
-            activation_button.setFixedSize(80, 30)  # Daha büyük ve modern
+            activation_button.setFixedSize(80, 30)  # Larger, modern look
             activation_button.setStyleSheet("""
                 QPushButton {
                     border: 1px solid #e2e8f0;
@@ -2393,7 +2393,7 @@ class MainWindow(QMainWindow):
                 }
             """)
 
-            # Buton durumunu ayarla
+            # Determine button styling based on status
             is_active = (email == active_account)
             is_banned = (health_status == _('status_banned_key'))
 
@@ -2444,17 +2444,17 @@ class MainWindow(QMainWindow):
                     }
                 """)
 
-            # Buton click handler'ını bağla
+            # Connect button click handler
             activation_button.clicked.connect(lambda checked, e=email: self.toggle_account_activation(e))
             self.table.setCellWidget(row, 0, activation_button)
 
-            # Email (Sütun 1)
+            # Email column (1)
             email_item = QTableWidgetItem(email)
             self.table.setItem(row, 1, email_item)
 
-            # Durum (Sütun 2)
+            # Status column (2)
             try:
-                # Banlanmış hesap kontrolü
+                # Check whether account is banned
                 if health_status == _('status_banned_key'):
                     status = _('status_banned')
                 else:
@@ -2467,7 +2467,7 @@ class MainWindow(QMainWindow):
                     else:
                         status = _('status_active')
 
-                    # Aktif hesap ise belirt
+                    # Append proxy-active marker for selected account
                     if email == active_account:
                         status += _('status_proxy_active')
 
@@ -2478,76 +2478,76 @@ class MainWindow(QMainWindow):
             status_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.table.setItem(row, 2, status_item)
 
-            # Limit (Sütun 3) - veritabanından al (varsayılan: "Güncellenmedi")
+            # Limit column (3) using stored info (defaults to "Not Updated")
             limit_item = QTableWidgetItem(limit_info or _('status_not_updated'))
             limit_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.table.setItem(row, 3, limit_item)
 
-            # Satır arkaplan rengini ayarla
+            # Determine row background color
             from PyQt5.QtGui import QColor
 
             if health_status == 'banned':
-                # Banlanmış hesap - soluk gri arkaplan
+                # Banned account: light gray background
                 color = QColor(156, 163, 175, 60)  # gray-400 with low opacity
             elif email == active_account:
-                # Aktif hesap - mavi arkaplan
+                # Active account: blue highlight
                 color = QColor(59, 130, 246, 80)  # blue-500 with opacity
             elif health_status == 'unhealthy':
-                # Sağlıksız hesap - kırmızı arkaplan
+                # Unhealthy account: red highlight
                 color = QColor(239, 68, 68, 80)  # red-500 with opacity
             else:
-                # Normal durum - varsayılan renk
+                # Default state: transparent background
                 color = QColor(255, 255, 255, 0)  # transparent
 
-            # Tüm sütunlara aynı arkaplan rengini uygula (buton hariç)
-            for col in range(1, 4):  # Sütun 0 buton olduğu için 1'den başla
+            # Apply color to all data columns (skip button column)
+            for col in range(1, 4):
                 item = self.table.item(row, col)
                 if item:
                     item.setBackground(color)
 
     def toggle_account_activation(self, email):
-        """Hesabın aktivasyon durumunu değiştir - gerekirse proxy'yi de başlat"""
+        """Toggle account activation and start proxy if needed"""
 
-        # Banlanmış hesap kontrolü
+        # Block activation when account is banned
         accounts_with_health = self.account_manager.get_accounts_with_health()
         for acc_email, _, acc_health in accounts_with_health:
             if acc_email == email and acc_health == 'banned':
-                self.show_status_message(f"{email} hesabı banlanmış - aktif edilemez", 5000)
+                self.show_status_message(f"{email} is banned and cannot be activated", 5000)
                 return
 
-        # Aktif hesabı kontrol et
+        # Compare with currently active account
         active_account = self.account_manager.get_active_account()
 
         if email == active_account and self.proxy_enabled:
-            # Hesap zaten aktif - deaktif et (proxy'yi de durdur)
+            # Account already active; deactivate and stop proxy
             self.stop_proxy()
         else:
-            # Hesap aktif değil veya proxy kapalı - proxy başlat ve hesabı aktif et
+            # Activate account, starting proxy if necessary
             if not self.proxy_enabled:
-                # Önce proxy'yi başlat
-                self.show_status_message(f"Proxy başlatılıyor ve {email} aktif ediliyor...", 2000)
+                # Start proxy first
+                self.show_status_message(f"Starting proxy and activating {email}...", 2000)
                 if self.start_proxy_and_activate_account(email):
-                    return  # Başarılı - işlem tamamlandı
+                    return  # Success handled in start method
                 else:
-                    return  # Başarısız - hata mesajı zaten gösterildi
+                    return  # Failure already messaged
             else:
-                # Proxy zaten aktif, sadece hesabı aktif et
+                # Proxy already running; activate account directly
                 self.activate_account(email)
 
     def show_context_menu(self, position):
-        """Sağ tık menüsünü göster"""
+        """Show context menu for the table"""
         item = self.table.itemAt(position)
         if item is None:
             return
 
         row = item.row()
-        email_item = self.table.item(row, 1)  # Email artık 1. sütunda
+        email_item = self.table.item(row, 1)  # Email is in column 1
         if not email_item:
             return
 
         email = email_item.text()
 
-        # Hesap durumunu kontrol et
+        # Determine account health status
         accounts_with_health = self.account_manager.get_accounts_with_health()
         health_status = None
         for acc_email, _, acc_health in accounts_with_health:
@@ -2555,63 +2555,63 @@ class MainWindow(QMainWindow):
                 health_status = acc_health
                 break
 
-        # Menü oluştur
+        # Create context menu actions
         menu = QMenu(self)
 
-        # Aktif et/Deaktif et
+        # Add activate/deactivate actions as appropriate
         if self.proxy_enabled:
             active_account = self.account_manager.get_active_account()
             if email == active_account:
-                deactivate_action = QAction("🔴 Deaktif Et", self)
+                deactivate_action = QAction("🔴 Deactivate", self)
                 deactivate_action.triggered.connect(lambda: self.deactivate_account(email))
                 menu.addAction(deactivate_action)
             else:
                 if health_status != 'banned':
-                    activate_action = QAction("🟢 Aktif Et", self)
+                    activate_action = QAction("🟢 Activate", self)
                     activate_action.triggered.connect(lambda: self.activate_account(email))
                     menu.addAction(activate_action)
 
         menu.addSeparator()
 
-        # Hesap sil
-        delete_action = QAction("🗑️ Hesabı Sil", self)
+        # Delete account action
+        delete_action = QAction("🗑️ Delete Account", self)
         delete_action.triggered.connect(lambda: self.delete_account_with_confirmation(email))
         menu.addAction(delete_action)
 
-        # Menüyü göster
+        # Display the context menu
         menu.exec_(self.table.mapToGlobal(position))
 
     def deactivate_account(self, email):
-        """Hesabı deaktif et"""
+        """Deactivate the specified account"""
         try:
             if self.account_manager.clear_active_account():
                 self.load_accounts(preserve_limits=True)
-                self.show_status_message(f"{email} hesabı deaktif edildi", 3000)
+                self.show_status_message(f"{email} has been deactivated", 3000)
             else:
-                self.show_status_message("Hesap deaktif edilemedi", 3000)
+                self.show_status_message(_('account_activation_failed'), 3000)
         except Exception as e:
-            self.show_status_message(f"Hata: {str(e)}", 5000)
+            self.show_status_message(f"{_('error')}: {str(e)}", 5000)
 
     def delete_account_with_confirmation(self, email):
-        """Hesabı onay isteyerek sil"""
+        """Delete an account after confirmation"""
         try:
-            reply = QMessageBox.question(self, "Hesap Sil",
-                                       f"'{email}' hesabını silmek istediğinizden emin misiniz?\n\n"
-                                       f"Bu işlem geri alınamaz!",
+            reply = QMessageBox.question(self, "Delete Account",
+                                       f"Are you sure you want to delete '{email}'?\n\n"
+                                       "This action cannot be undone!",
                                        QMessageBox.Yes | QMessageBox.No,
                                        QMessageBox.No)
 
             if reply == QMessageBox.Yes:
                 if self.account_manager.delete_account(email):
                     self.load_accounts(preserve_limits=True)
-                    self.show_status_message(f"{email} hesabı silindi", 3000)
+                    self.show_status_message(f"{email} has been deleted", 3000)
                 else:
-                    self.show_status_message("Hesap silinemedi", 3000)
+                    self.show_status_message("Account could not be deleted", 3000)
         except Exception as e:
-            self.show_status_message(f"Silme hatası: {str(e)}", 5000)
+            self.show_status_message(f"Deletion error: {str(e)}", 5000)
 
     def add_account(self):
-        """Hesap ekleme dialogunu aç"""
+        """Open the account addition dialog"""
         dialog = AddAccountDialog(self)
         if dialog.exec_() == QDialog.Accepted:
             json_data = dialog.get_json_data()
@@ -2624,60 +2624,60 @@ class MainWindow(QMainWindow):
                     self.status_bar.showMessage(f"{_('error')}: {message}", 5000)
 
     def refresh_limits(self):
-        """Limitleri güncelle"""
+        """Refresh stored limit information for all accounts"""
         accounts = self.account_manager.get_accounts_with_health()
         if not accounts:
             self.status_bar.showMessage(_('no_accounts_to_update'), 3000)
             return
 
-        # Progress dialog
+        # Display progress dialog
         self.progress_dialog = QProgressDialog(_('updating_limits'), _('cancel'), 0, 100, self)
         self.progress_dialog.setWindowModality(Qt.WindowModal)
         self.progress_dialog.show()
 
-        # Worker thread başlat
+        # Launch background worker
         self.worker = TokenRefreshWorker(accounts, self.proxy_enabled)
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.refresh_finished)
         self.worker.error.connect(self.refresh_error)
         self.worker.start()
 
-        # Butonları devre dışı bırak
+        # Disable buttons while refresh is running
         self.refresh_limits_button.setEnabled(False)
         self.add_account_button.setEnabled(False)
 
     def update_progress(self, value, text):
-        """Progress güncelle"""
+        """Update progress dialog state"""
         self.progress_dialog.setValue(value)
         self.progress_dialog.setLabelText(text)
 
     def refresh_finished(self, results):
-        """Güncelleme tamamlandı"""
+        """Handle completion of the refresh worker"""
         self.progress_dialog.close()
 
-        # Tabloyu yeniden yükle (veritabanından limit bilgileri otomatik gelecek)
+        # Reload table to display updated values
         self.load_accounts()
 
-        # Butonları aktif et
+        # Re-enable buttons
         self.refresh_limits_button.setEnabled(True)
         self.add_account_button.setEnabled(True)
 
         self.status_bar.showMessage(_('accounts_updated', len(results)), 3000)
 
     def refresh_error(self, error_message):
-        """Güncelleme hatası"""
+        """Handle errors from the refresh worker"""
         self.progress_dialog.close()
         self.refresh_limits_button.setEnabled(True)
         self.add_account_button.setEnabled(True)
         self.status_bar.showMessage(f"{_('error')}: {error_message}", 5000)
 
     def start_proxy_and_activate_account(self, email):
-        """Proxy'yi başlat ve hesabı aktif et"""
+        """Start the proxy and activate the selected account"""
         try:
-            # Mitmproxy'yi başlat
+            # Start mitmproxy
             print(f"Starting proxy and activating {email}...")
 
-            # Progress dialog göster
+            # Show progress dialog while starting proxy
             progress = QProgressDialog(_('proxy_starting_account').format(email), _('cancel'), 0, 0, self)
             progress.setWindowModality(Qt.WindowModal)
             progress.show()
@@ -2694,7 +2694,7 @@ class MainWindow(QMainWindow):
                 if IS_WINDOWS and ProxyManager is not None:
                     ok = ProxyManager.set_proxy(proxy_url)
                 else:
-                    # Linux: kullanıcıya tarayıcı/proxy ayarı bilgisini göster
+                    # On Linux inform user to configure browser/system proxy
                     self.status_bar.showMessage(f"Set your system/browser proxy to {proxy_url}", 5000)
 
                 if ok:
@@ -2704,14 +2704,14 @@ class MainWindow(QMainWindow):
                     self.proxy_enabled = True
                     self.proxy_start_button.setEnabled(False)
                     self.proxy_start_button.setText(_('proxy_active'))
-                    self.proxy_stop_button.setVisible(True)  # Artık görünür yap
+                    self.proxy_stop_button.setVisible(True)
                     self.proxy_stop_button.setEnabled(True)
 
-                    # Aktif hesap refresh timer'ını başlat
+                    # Ensure refresh timer runs
                     if hasattr(self, 'active_account_refresh_timer') and not self.active_account_refresh_timer.isActive():
                         self.active_account_refresh_timer.start(60000)
 
-                    # Hesabı aktif et
+                    # Activate the account now that proxy is ready
                     self.activate_account(email)
 
                     progress.close()
@@ -2738,12 +2738,12 @@ class MainWindow(QMainWindow):
             return False
 
     def start_proxy(self):
-        """Proxy'yi başlat (eski metod - sadece proxy başlatma için)"""
+        """Start only the proxy (legacy entry point)"""
         try:
-            # Mitmproxy'yi başlat
+            # Start mitmproxy
             print("Starting proxy...")
 
-            # Progress dialog göster
+            # Show progress dialog during startup
             progress = QProgressDialog(_('proxy_starting'), _('cancel'), 0, 0, self)
             progress.setWindowModality(Qt.WindowModal)
             progress.show()
@@ -2768,17 +2768,17 @@ class MainWindow(QMainWindow):
                     self.proxy_enabled = True
                     self.proxy_start_button.setEnabled(False)
                     self.proxy_start_button.setText(_('proxy_active'))
-                    self.proxy_stop_button.setVisible(True)  # Artık görünür yap
+                    self.proxy_stop_button.setVisible(True)
                     self.proxy_stop_button.setEnabled(True)
 
-                    # Aktif hesap refresh timer'ını başlat
+                    # Ensure refresh timer runs
                     if hasattr(self, 'active_account_refresh_timer') and not self.active_account_refresh_timer.isActive():
                         self.active_account_refresh_timer.start(60000)
 
-                    # Tabloyu güncelle
+                    # Refresh table to reflect proxy state
                     self.load_accounts()
 
-                    self.status_bar.showMessage(f"Proxy başlatıldı: {proxy_url}", 5000)
+                    self.status_bar.showMessage(f"Proxy started at {proxy_url}", 5000)
                     print("Proxy started successfully!")
                 else:
                     progress.close()
@@ -2796,19 +2796,19 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(_('proxy_start_error').format(str(e)), 5000)
 
     def stop_proxy(self):
-        """Proxy'yi durdur"""
+        """Stop the proxy and clean up state"""
         try:
-            # Windows proxy ayarlarını devre dışı bırak
+            # Disable Windows proxy settings
             if IS_WINDOWS and ProxyManager is not None:
                 ProxyManager.disable_proxy()
 
-            # Mitmproxy'yi durdur
+            # Stop mitmproxy
             self.proxy_manager.stop()
 
-            # Aktif hesabı temizle
+            # Clear active account reference
             self.account_manager.clear_active_account()
 
-            # Aktif hesap refresh timer'ını durdur
+            # Stop active account refresh timer
             if hasattr(self, 'active_account_refresh_timer') and self.active_account_refresh_timer.isActive():
                 self.active_account_refresh_timer.stop()
                 print("🔄 Active account refresh timer stopped")
@@ -2816,10 +2816,10 @@ class MainWindow(QMainWindow):
             self.proxy_enabled = False
             self.proxy_start_button.setEnabled(True)
             self.proxy_start_button.setText(_('proxy_start'))
-            self.proxy_stop_button.setVisible(False)  # Gizle
+            self.proxy_stop_button.setVisible(False)
             self.proxy_stop_button.setEnabled(False)
 
-            # Tabloyu güncelle
+            # Refresh displayed accounts
             self.load_accounts(preserve_limits=True)
 
             self.status_bar.showMessage(_('proxy_stopped'), 3000)
@@ -2827,9 +2827,9 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(_('proxy_stop_error').format(str(e)), 5000)
 
     def activate_account(self, email):
-        """Hesabı aktif et"""
+        """Activate the selected account"""
         try:
-            # Önce hesap durumunu kontrol et
+            # Retrieve account state/details
             accounts_with_health = self.account_manager.get_accounts_with_health()
             account_data = None
             health_status = None
@@ -2844,39 +2844,39 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(_('account_not_found'), 3000)
                 return
 
-            # Banlanmış hesap aktif edilemez
+            # Prevent activation for banned accounts
             if health_status == 'banned':
                 self.status_bar.showMessage(_('account_banned_cannot_activate').format(email), 5000)
                 return
 
-            # Token süresi kontrolü
+            # Check token expiration
             current_time = int(time.time() * 1000)
             expiration_time = account_data['stsTokenManager']['expirationTime']
 
             if current_time >= expiration_time:
-                # Token yenileme - thread'e taşı
+                # Token expired; run refresh worker
                 self.start_token_refresh(email, account_data)
                 return
 
-            # Token geçerli, hesabı direkt aktif et
+            # Token is valid, activate immediately
             self._complete_account_activation(email)
 
         except Exception as e:
             self.status_bar.showMessage(_('account_activation_error').format(str(e)), 5000)
 
     def start_token_refresh(self, email, account_data):
-        """Token yenileme işlemini thread'te başlat"""
-        # Eğer başka bir token worker çalışıyorsa bekle
+        """Start a background token refresh operation"""
+        # If another token worker is running, do not start a new one
         if self.token_worker and self.token_worker.isRunning():
             self.status_bar.showMessage(_('token_refresh_in_progress'), 3000)
             return
 
-        # Progress dialog göster
+        # Show progress dialog
         self.token_progress_dialog = QProgressDialog(_('token_refreshing').format(email), _('cancel'), 0, 0, self)
         self.token_progress_dialog.setWindowModality(Qt.WindowModal)
         self.token_progress_dialog.show()
 
-        # Token worker başlat
+        # Launch token worker thread
         self.token_worker = TokenWorker(email, account_data, self.proxy_enabled)
         self.token_worker.progress.connect(self.update_token_progress)
         self.token_worker.finished.connect(self.token_refresh_finished)
@@ -2884,12 +2884,12 @@ class MainWindow(QMainWindow):
         self.token_worker.start()
 
     def update_token_progress(self, message):
-        """Token yenileme progress güncelle"""
+        """Update progress text during token refresh"""
         if self.token_progress_dialog:
             self.token_progress_dialog.setLabelText(message)
 
     def token_refresh_finished(self, success, message):
-        """Token yenileme tamamlandı"""
+        """Handle completion of token refresh"""
         if self.token_progress_dialog:
             self.token_progress_dialog.close()
             self.token_progress_dialog = None
@@ -2897,15 +2897,15 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(message, 3000)
 
         if success:
-            # Token başarıyla yenilendi, hesabı aktif et
+            # Token refreshed successfully; activate account
             email = self.token_worker.email
             self._complete_account_activation(email)
 
-        # Worker'ı temizle
+        # Clear worker reference
         self.token_worker = None
 
     def token_refresh_error(self, error_message):
-        """Token yenileme hatası"""
+        """Handle token refresh errors"""
         if self.token_progress_dialog:
             self.token_progress_dialog.close()
             self.token_progress_dialog = None
@@ -2914,14 +2914,14 @@ class MainWindow(QMainWindow):
         self.token_worker = None
 
     def _complete_account_activation(self, email):
-        """Hesap aktivasyonunu tamamla"""
+        """Finalize account activation flow"""
         try:
             if self.account_manager.set_active_account(email):
                 self.load_accounts(preserve_limits=True)
                 self.status_bar.showMessage(_('account_activated').format(email), 3000)
                 self.notify_proxy_active_account_change()
 
-                # user_settings.json dosyası kontrolü ve gerekirse API çağrısı
+                # Ensure user_settings.json exists (fetch if missing)
                 self.check_and_fetch_user_settings(email)
             else:
                 self.status_bar.showMessage(_('account_activation_failed'), 3000)
@@ -2929,12 +2929,12 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(_('account_activation_error').format(str(e)), 5000)
 
     def check_and_fetch_user_settings(self, email):
-        """user_settings.json dosyası kontrolü ve gerekirse API çağrısı"""
+        """Ensure user_settings.json exists; fetch via API when needed"""
         try:
             import os
             user_settings_path = "user_settings.json"
 
-            # Dosya var mı kontrol et
+            # Create file if missing
             if not os.path.exists(user_settings_path):
                 print(f"🔍 user_settings.json not found, calling API for {email}...")
                 self.fetch_and_save_user_settings(email)
@@ -2944,12 +2944,12 @@ class MainWindow(QMainWindow):
             print(f"user_settings check error: {e}")
 
     def fetch_and_save_user_settings(self, email):
-        """GetUpdatedCloudObjects API çağrısı yapıp user_settings.json olarak kaydet"""
+        """Call GetUpdatedCloudObjects API and persist response to user_settings.json"""
         try:
             # Get dynamic OS information
             os_info = get_os_info()
 
-            # Aktif hesabın token'ini al
+            # Retrieve active account token
             accounts = self.account_manager.get_accounts()
             account_data = None
 
@@ -2964,7 +2964,7 @@ class MainWindow(QMainWindow):
 
             access_token = account_data['stsTokenManager']['accessToken']
 
-            # API isteği hazırla
+            # Prepare API request
             url = "https://app.warp.dev/graphql/v2?op=GetUpdatedCloudObjects"
             headers = {
                 'Content-Type': 'application/json',
@@ -3387,19 +3387,19 @@ class MainWindow(QMainWindow):
                 "operationName": "GetUpdatedCloudObjects"
             }
 
-            # Proxy kullanmadan direkt API çağrısı yap
+            # Invoke the API directly without proxying
             proxies = {'http': None, 'https': None}
             response = requests.post(url, headers=headers, json=payload, timeout=60, verify=False, proxies=proxies)
 
             if response.status_code == 200:
                 user_settings_data = response.json()
 
-                # user_settings.json dosyasına kaydet
+                # Persist response to user_settings.json
                 with open("user_settings.json", 'w', encoding='utf-8') as f:
                     json.dump(user_settings_data, f, indent=2, ensure_ascii=False)
 
                 print(f"✅ user_settings.json created successfully ({email})")
-                self.status_bar.showMessage(f"🔄 {email} için kullanıcı ayarları indirildi", 3000)
+                self.status_bar.showMessage(f"🔄 Downloaded user settings for {email}", 3000)
                 return True
             else:
                 print(f"❌ API request failed: {response.status_code} - {response.text}")
@@ -3410,13 +3410,13 @@ class MainWindow(QMainWindow):
             return False
 
     def notify_proxy_active_account_change(self):
-        """Proxy script'e aktif hesap değişikliğini bildir"""
+        """Inform the proxy script about the new active account"""
         try:
-            # Proxy çalışıyor mu kontrol et
+            # Check whether the proxy is running
             if hasattr(self, 'proxy_manager') and self.proxy_manager.is_running():
                 print("📢 Notifying proxy about active account change...")
 
-                # Dosya bazlı trigger sistemi - daha güvenli
+                # File-based trigger mechanism for reliability
                 import time
                 trigger_file = "account_change_trigger.tmp"
                 try:
@@ -3433,7 +3433,7 @@ class MainWindow(QMainWindow):
             print(f"Proxy notification error: {e}")
 
     def refresh_account_token(self, email, account_data):
-        """Tekil hesabın tokenini yenile"""
+        """Refresh the token for a specific account"""
         try:
             refresh_token = account_data['stsTokenManager']['refreshToken']
             api_key = account_data['apiKey']
@@ -3441,14 +3441,14 @@ class MainWindow(QMainWindow):
             url = f"https://securetoken.googleapis.com/v1/token?key={api_key}"
             headers = {
                 'Content-Type': 'application/json',
-                'User-Agent': 'WarpAccountManager/1.0'  # Özel User-Agent ile işaretliyoruz
+                'User-Agent': 'WarpAccountManager/1.0'  # Tag request with manager-specific user agent
             }
             data = {
                 'grant_type': 'refresh_token',
                 'refresh_token': refresh_token
             }
 
-            # Proxy kullanmadan direkt bağlan
+            # Establish direct connection without proxy
             proxies = {'http': None, 'https': None} if self.proxy_enabled else None
             response = requests.post(url, json=data, headers=headers, timeout=30,
                                    verify=not self.proxy_enabled, proxies=proxies)
@@ -3468,14 +3468,14 @@ class MainWindow(QMainWindow):
             return False
 
     def check_proxy_status(self):
-        """Proxy durumunu kontrol et"""
+        """Monitor proxy status and handle unexpected stops"""
         if self.proxy_enabled:
             if not self.proxy_manager.is_running():
-                # Proxy beklenmedik şekilde durmuş
+                # Proxy stopped unexpectedly
                 self.proxy_enabled = False
                 self.proxy_start_button.setEnabled(True)
                 self.proxy_start_button.setText(_('proxy_start'))
-                self.proxy_stop_button.setVisible(False)  # Gizle
+                self.proxy_stop_button.setVisible(False)
                 self.proxy_stop_button.setEnabled(False)
                 ProxyManager.disable_proxy()
                 self.account_manager.clear_active_account()
@@ -3484,18 +3484,18 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(_('proxy_unexpected_stop'), 5000)
 
     def check_ban_notifications(self):
-        """Ban bildirimlerini kontrol et"""
+        """Check for ban notifications emitted by proxy script"""
         try:
             import os
 
             ban_notification_file = "ban_notification.tmp"
             if os.path.exists(ban_notification_file):
-                # Dosyayı oku
+                # Read notification details
                 with open(ban_notification_file, 'r', encoding='utf-8') as f:
                     content = f.read().strip()
 
                 if content:
-                    # Email ve timestamp'i ayır
+                    # Extract email and timestamp
                     parts = content.split('|')
                     if len(parts) >= 2:
                         banned_email = parts[0]
@@ -3503,38 +3503,38 @@ class MainWindow(QMainWindow):
 
                         print(f"Ban notification received: {banned_email} (timestamp: {timestamp})")
 
-                        # Tabloyu yenile
+                        # Refresh account list
                         self.load_accounts(preserve_limits=True)
 
-                        # Kullanıcıya bilgi ver
-                        self.show_status_message(f"⛔ {banned_email} hesabı banlandı!", 8000)
+                        # Inform user about ban status
+                        self.show_status_message(f"⛔ {banned_email} account has been banned!", 8000)
 
-                # Dosyayı sil
+                # Remove temporary notification file
                 os.remove(ban_notification_file)
                 print("Ban notification file removed")
 
         except Exception as e:
-            # Hata durumunda sessizce devam et (dosya yoksa normal)
+            # Ignore missing file or read errors
             pass
 
     def refresh_active_account(self):
-        """Aktif hesabın token'ini ve limitini yenile - 60 saniyede bir çalışır"""
+        """Refresh active account token and limit every 60 seconds"""
         try:
-            # Proxy aktif değilse timer'ı durdur
+            # Stop timer if proxy is no longer active
             if not self.proxy_enabled:
                 if self.active_account_refresh_timer.isActive():
                     self.active_account_refresh_timer.stop()
                     print("🔄 Active account refresh timer stopped (proxy disabled)")
                 return
 
-            # Aktif hesabı al
+            # Retrieve active account email
             active_email = self.account_manager.get_active_account()
             if not active_email:
                 return
 
             print(f"🔄 Aktif hesap yenileniyor: {active_email}")
 
-            # Hesap bilgilerini al
+            # Fetch account data from database
             accounts_with_health = self.account_manager.get_accounts_with_health_and_limits()
             active_account_data = None
             health_status = None
@@ -3549,29 +3549,29 @@ class MainWindow(QMainWindow):
                 print(f"❌ Active account not found: {active_email}")
                 return
 
-            # Banlanmış hesabı atla
+            # Skip accounts that are banned
             if health_status == 'banned':
                 print(f"⛔ Active account banned, skipping: {active_email}")
                 return
 
-            # Token ve limit bilgilerini yenile
+            # Refresh token and limits
             self._refresh_single_active_account(active_email, active_account_data)
 
         except Exception as e:
             print(f"Active account refresh error: {e}")
 
     def _refresh_single_active_account(self, email, account_data):
-        """Tek bir aktif hesabın token'ini ve limitini yenile"""
+        """Refresh token and limits for the given active account"""
         try:
-            # Token yenile
+            # Renew token
             if self.renew_single_token(email, account_data):
                 print(f"✅ Aktif hesap tokeni yenilendi: {email}")
 
-                # Limit bilgilerini de güncelle
+                # Update limit metadata
                 self._update_active_account_limit(email)
 
-                # Tabloyu güncelle
-                self.load_accounts(preserve_limits=False)  # Limit bilgileri de güncellensin
+                # Reload table to reflect limit changes
+                self.load_accounts(preserve_limits=False)
             else:
                 print(f"❌ Aktif hesap tokeni yenilenemedi: {email}")
                 self.account_manager.update_account_health(email, 'unhealthy')
@@ -3580,15 +3580,15 @@ class MainWindow(QMainWindow):
             print(f"Active account refresh error ({email}): {e}")
 
     def _update_active_account_limit(self, email):
-        """Aktif hesabın limit bilgilerini güncelle"""
+        """Update cached limit information for the active account"""
         try:
-            # Hesap bilgilerini yeniden al
+            # Retrieve account data again
             accounts = self.account_manager.get_accounts()
             for acc_email, acc_json in accounts:
                 if acc_email == email:
                     account_data = json.loads(acc_json)
 
-                    # Limit bilgilerini al
+                    # Fetch latest limit info
                     limit_info = self._get_account_limit_info(account_data)
                     if limit_info:
                         used = limit_info.get('requestsUsedSinceLastRefresh', 0)
@@ -3606,7 +3606,7 @@ class MainWindow(QMainWindow):
             print(f"Active account limit update error ({email}): {e}")
 
     def _get_account_limit_info(self, account_data):
-        """Hesabın limit bilgilerini Warp API'den al"""
+        """Request limit information for an account from Warp API"""
         try:
             # Get dynamic OS information
             os_info = get_os_info()
@@ -3699,7 +3699,7 @@ class MainWindow(QMainWindow):
                 "operationName": "GetRequestLimitInfo"
             }
 
-            # Proxy kullanmadan direkt bağlan
+            # Connect without using the proxy
             proxies = {'http': None, 'https': None}
             response = requests.post(url, headers=headers, json=payload, timeout=30,
                                    verify=True, proxies=proxies)
@@ -3716,11 +3716,11 @@ class MainWindow(QMainWindow):
             return None
 
     def auto_renew_tokens(self):
-        """Otomatik token yenileme - dakikada 1 kez çalışır"""
+        """Automatically refresh tokens every minute"""
         try:
             print("🔄 Starting automatic token check...")
 
-            # Tüm hesapları al
+            # Fetch all accounts with status info
             accounts = self.account_manager.get_accounts_with_health_and_limits()
 
             if not accounts:
@@ -3730,7 +3730,7 @@ class MainWindow(QMainWindow):
             renewed_count = 0
 
             for email, account_json, health_status, limit_info in accounts:
-                # Banlanmış hesapları atla
+                # Skip banned accounts
                 if health_status == 'banned':
                     continue
 
@@ -3739,13 +3739,13 @@ class MainWindow(QMainWindow):
                     expiration_time = account_data['stsTokenManager']['expirationTime']
                     current_time = int(time.time() * 1000)
 
-                    # Token süresi dolmuş mu kontrol et (1 dakika önce yenile)
-                    buffer_time = 1 * 60 * 1000  # 1 dakika buffer
+                    # Renew tokens one minute before expiration
+                    buffer_time = 1 * 60 * 1000
                     if current_time >= (expiration_time - buffer_time):
                         expired_count += 1
                         print(f"⏰ Token expiring soon: {email}")
 
-                        # Token'ı yenile
+                        # Attempt token refresh
                         if self.renew_single_token(email, account_data):
                             renewed_count += 1
                             print(f"✅ Token yenilendi: {email}")
@@ -3756,31 +3756,31 @@ class MainWindow(QMainWindow):
                     print(f"Token check error ({email}): {e}")
                     continue
 
-            # Sonuç mesajı
+            # Present summary message
             if expired_count > 0:
                 if renewed_count > 0:
-                    self.show_status_message(f"🔄 {renewed_count}/{expired_count} token yenilendi", 5000)
-                    # Tabloyu güncelle
+                    self.show_status_message(f"🔄 Refreshed {renewed_count}/{expired_count} expiring tokens", 5000)
+                    # Reload accounts to reflect changes
                     self.load_accounts(preserve_limits=True)
                 else:
-                    self.show_status_message(f"⚠️ {expired_count} token yenilenemedi", 5000)
+                    self.show_status_message(f"⚠️ Failed to refresh {expired_count} expiring tokens", 5000)
             else:
                 print("✅ All tokens are valid")
 
         except Exception as e:
             print(f"Automatic token renewal error: {e}")
-            self.show_status_message("❌ Token kontrol hatası", 3000)
+            self.show_status_message("❌ Token check failed", 3000)
 
     def renew_single_token(self, email, account_data):
-        """Tek bir hesabın token'ını yenile"""
+        """Refresh the token for a single account"""
         try:
             refresh_token = account_data['stsTokenManager']['refreshToken']
             api_key = account_data.get('apiKey')
 
             if not api_key:
-                raise ValueError("Firebase API anahtarı bulunamadı")
+                raise ValueError("Firebase API key was not found")
 
-            # Firebase token yenileme API'si
+            # Firebase token refresh endpoint
             url = f"https://securetoken.googleapis.com/v1/token?key={api_key}"
 
             payload = {
@@ -3792,7 +3792,7 @@ class MainWindow(QMainWindow):
                 "Content-Type": "application/json"
             }
 
-            # Proxy'yi bypass et
+            # Bypass proxy to call Firebase directly
             proxies = {'http': None, 'https': None}
 
             response = requests.post(url, json=payload, headers=headers,
@@ -3801,20 +3801,20 @@ class MainWindow(QMainWindow):
             if response.status_code == 200:
                 token_data = response.json()
 
-                # Yeni token bilgilerini güncelle
+                # Update token details
                 new_access_token = token_data['access_token']
                 new_refresh_token = token_data.get('refresh_token', refresh_token)
-                expires_in = int(token_data['expires_in']) * 1000  # saniyeyi milisaniyeye çevir
+                expires_in = int(token_data['expires_in']) * 1000
 
-                # Yeni expiration time hesapla
+                # Compute new expiration time
                 new_expiration_time = int(time.time() * 1000) + expires_in
 
-                # Account data'yı güncelle
+                # Update in-memory account data
                 account_data['stsTokenManager']['accessToken'] = new_access_token
                 account_data['stsTokenManager']['refreshToken'] = new_refresh_token
                 account_data['stsTokenManager']['expirationTime'] = new_expiration_time
 
-                # Veritabanına kaydet
+                # Persist changes to database
                 updated_json = json.dumps(account_data)
                 self.account_manager.update_account(email, updated_json)
 
@@ -3828,7 +3828,7 @@ class MainWindow(QMainWindow):
             return False
 
     def reset_status_message(self):
-        """Status mesajını varsayılan haline döndür"""
+        """Restore the default status bar message"""
         debug_mode = os.path.exists("debug.txt")
         if debug_mode:
             default_message = _('default_status_debug')
@@ -3838,77 +3838,80 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(default_message)
 
     def show_status_message(self, message, timeout=5000):
-        """Status mesajı göster ve belirtilen süre sonra varsayılan mesaja dön"""
+        """Display a status message and schedule automatic reset"""
         self.status_bar.showMessage(message)
 
-        # Reset timer'ını başlat
+        # Start/reset the timer
         if timeout > 0:
             self.status_reset_timer.start(timeout)
 
     def show_help_dialog(self):
-        """Yardım ve kullanım kılavuzu dialog'unu göster"""
+        """Display the help and usage guide dialog"""
         dialog = HelpDialog(self)
         dialog.exec_()
 
     def change_language(self, language_text):
-        """Dil değiştir ve UI'ı yenile"""
-        language_code = 'tr' if language_text == 'TR' else 'en'
+        """Switch application language and refresh UI"""
+        language_code = 'id' if language_text == 'ID' else 'en'
         get_language_manager().set_language(language_code)
         self.refresh_ui_texts()
 
     def refresh_ui_texts(self):
-        """UI metinlerini yenile"""
-        # Pencere başlığı
+        """Refresh UI text labels according to selected language"""
+        # Update window title
         self.setWindowTitle(_('app_title'))
 
-        # Butonlar
+        # Update button labels
         self.proxy_start_button.setText(_('proxy_start') if not self.proxy_enabled else _('proxy_active'))
         self.proxy_stop_button.setText(_('proxy_stop'))
         self.add_account_button.setText(_('add_account'))
         self.refresh_limits_button.setText(_('refresh_limits'))
         self.help_button.setText(_('help'))
 
-        # Tablo başlıkları
+        # Update table headers
         self.table.setHorizontalHeaderLabels([_('current'), _('email'), _('status'), _('limit')])
 
-        # Status bar
+        # Reset status bar message to default
         debug_mode = os.path.exists("debug.txt")
         if debug_mode:
             self.status_bar.showMessage(_('default_status_debug'))
         else:
             self.status_bar.showMessage(_('default_status'))
 
-        # Tabloyu yeniden yükle
+        # Reload table to apply language changes
         self.load_accounts(preserve_limits=True)
 
     def on_account_added_via_bridge(self, email):
-        """Bridge üzerinden hesap eklendiğinde tabloyu yenile"""
+        """Refresh table when an account arrives via bridge"""
         try:
             print(f"🔄 Bridge: Tablo yenileniyor - {email}")
-            # Thread-safe sinyal emit et
+            # Emit signal from worker thread safely
             self.bridge_account_added.emit(email)
             print("✅ Bridge: Table refresh signal sent")
         except Exception as e:
             print(f"❌ Bridge: Table refresh error - {e}")
 
     def refresh_table_after_bridge_add(self, email):
-        """Bridge sonrası tablo yenileme (ana thread'de çalışır)"""
+        """Refresh table after bridge addition (runs on main thread)"""
         try:
             print(f"🔄 Ana thread'de tablo yenileniyor... ({email})")
             self.load_accounts(preserve_limits=True)
 
-            # Kullanıcıya bildiri göster
-            self.status_bar.showMessage(f"✅ Yeni hesap bridge ile eklendi: {email}", 5000)
+            # Notify user via status bar
+            if email:
+                self.status_bar.showMessage(f"✅ New account added via bridge: {email}", 5000)
+            else:
+                self.status_bar.showMessage("✅ New account added via bridge", 5000)
             print("✅ Table refreshed successfully")
         except Exception as e:
             print(f"❌ Main thread table refresh error: {e}")
 
     def closeEvent(self, event):
-        """Uygulama kapanırken temizlik yap"""
+        """Perform cleanup when the application closes"""
         if self.proxy_enabled:
             self.stop_proxy()
 
-        # Bridge server'ı durdur
+        # Stop bridge server if running
         if hasattr(self, 'bridge_server'):
             self.bridge_server.stop()
 
@@ -3917,7 +3920,7 @@ class MainWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    # Uygulama stili: modern ve kompakt
+    # Apply modern, compact visual style
     load_stylesheet(app)
 
     window = MainWindow()
