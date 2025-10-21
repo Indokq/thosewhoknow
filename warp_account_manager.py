@@ -103,9 +103,9 @@ class AccountManager:
             # Sütun zaten var
             pass
 
-        # Mevcut tabloya limit_info sütunu ekle (eğer yoksa)
+        # Add limit_info column if it doesn't exist
         try:
-            cursor.execute('ALTER TABLE accounts ADD COLUMN limit_info TEXT DEFAULT "Güncellenmedi"')
+            cursor.execute('ALTER TABLE accounts ADD COLUMN limit_info TEXT DEFAULT "Not Updated"')
         except sqlite3.OperationalError:
             # Sütun zaten var
             pass
@@ -178,7 +178,7 @@ class AccountManager:
             conn.close()
             return True
         except Exception as e:
-            print(f"Sağlık durumu güncelleme hatası: {e}")
+            print(f"Health status update error: {e}")
             return False
 
     def update_account_token(self, email, new_token_data):
@@ -202,7 +202,7 @@ class AccountManager:
                 return True
             return False
         except Exception as e:
-            print(f"Token güncelleme hatası: {e}")
+            print(f"Token update error: {e}")
             return False
 
     def update_account(self, email, updated_json):
@@ -218,7 +218,7 @@ class AccountManager:
             conn.close()
             return True
         except Exception as e:
-            print(f"Hesap güncelleme hatası: {e}")
+            print(f"Account update error: {e}")
             return False
 
     def set_active_account(self, email):
@@ -234,7 +234,7 @@ class AccountManager:
             conn.close()
             return True
         except Exception as e:
-            print(f"Aktif hesap ayarlama hatası: {e}")
+            print(f"Active account assignment error: {e}")
             return False
 
     def get_active_account(self):
@@ -259,7 +259,7 @@ class AccountManager:
             conn.close()
             return True
         except Exception as e:
-            print(f"Aktif hesap temizleme hatası: {e}")
+            print(f"Active account clearing error: {e}")
             return False
 
     def delete_account(self, email):
@@ -281,7 +281,7 @@ class AccountManager:
             conn.close()
             return True
         except Exception as e:
-            print(f"Hesap silme hatası: {e}")
+            print(f"Account deletion error: {e}")
             return False
 
     def update_account_limit_info(self, email, limit_info):
@@ -297,7 +297,7 @@ class AccountManager:
             conn.close()
             return True
         except Exception as e:
-            print(f"Limit bilgisi güncelleme hatası: {e}")
+            print(f"Limit information update error: {e}")
             return False
 
     def get_accounts_with_health_and_limits(self):
@@ -334,7 +334,7 @@ class AccountManager:
             conn.close()
             return True
         except Exception as e:
-            print(f"Sertifika onay kaydetme hatası: {e}")
+            print(f"Certificate approval save error: {e}")
             return False
 
 
@@ -910,7 +910,7 @@ class MitmProxyManager:
         """Mitmproxy'yi başlat"""
         try:
             if self.is_running():
-                print("Mitmproxy zaten çalışıyor")
+                print("Mitmproxy is already running")
                 return True
 
             # First, check if mitmproxy is properly installed
@@ -939,10 +939,10 @@ class MitmProxyManager:
                     temp_process.terminate()
                     temp_process.wait(timeout=3)
 
-                    print("✅ Sertifika oluşturma tamamlandı")
+                    print("✅ Certificate generation completed")
 
                 except Exception as e:
-                    print(f"❌ Sertifika oluşturma hatası: {e}")
+                    print(f"❌ Certificate generation error: {e}")
 
                 # Sertifika oluştu mu kontrol et
                 if not self.cert_manager.check_certificate_exists():
@@ -1064,7 +1064,7 @@ class MitmProxyManager:
                     return False
 
         except Exception as e:
-            print(f"Mitmproxy başlatma hatası: {e}")
+            print(f"Mitmproxy startup error: {e}")
             return False
 
     def _suggest_mitmproxy_solutions(self, stderr, stdout):
@@ -1193,7 +1193,7 @@ class MitmProxyManager:
 
             return True
         except Exception as e:
-            print(f"Mitmproxy durdurma hatası: {e}")
+            print(f"Mitmproxy shutdown error: {e}")
             return False
 
     def is_running(self):
@@ -1273,7 +1273,7 @@ class MitmProxyManager:
             dialog = ManualCertificateDialog(self.cert_manager.get_certificate_path(), parent_window)
             return dialog.exec_() == QDialog.Accepted
         except Exception as e:
-            print(f"Manuel sertifika dialog hatası: {e}")
+            print(f"Manual certificate dialog error: {e}")
             return False
 
 
@@ -1471,7 +1471,7 @@ class TokenWorker(QThread):
                 return self.account_manager.update_account_token(self.email, new_token_data)
             return False
         except Exception as e:
-            print(f"Token yenileme hatası: {e}")
+            print(f"Token refresh error: {e}")
             return False
 
 
@@ -1578,7 +1578,7 @@ class TokenRefreshWorker(QThread):
                 return self.account_manager.update_account_token(email, new_token_data)
             return False
         except Exception as e:
-            print(f"Token yenileme hatası: {e}")
+            print(f"Token refresh error: {e}")
             return False
 
     def get_limit_info(self, account_data):
@@ -1688,7 +1688,7 @@ class TokenRefreshWorker(QThread):
                         return user_data['user']['requestLimitInfo']
             return None
         except Exception as e:
-            print(f"Limit bilgisi alma hatası: {e}")
+            print(f"Limit information retrieval error: {e}")
             return None
 
 
@@ -2151,13 +2151,13 @@ class MainWindow(QMainWindow):
     def setup_bridge_system(self):
         """Bridge sistem konfigürasyonu ve server başlatma"""
         try:
-            print("🌉 Bridge sistemi başlatılıyor...")
+            print("🌉 Starting bridge system...")
 
             # Windows bridge konfigürasyonu kontrol et (Windows'ta)
             if IS_WINDOWS and BridgeConfig is not None:
                 bridge_config = BridgeConfig()
                 if not bridge_config.check_configuration():
-                    print("⚙️  Bridge konfigürasyonu yapılıyor...")
+                    print("⚙️  Configuring bridge...")
                     bridge_config.setup_bridge_config()
 
             # Bridge server başlat (callback ile tablo yenileme)
@@ -2166,12 +2166,12 @@ class MainWindow(QMainWindow):
                 on_account_added=self.on_account_added_via_bridge
             )
             if self.bridge_server.start():
-                print("✅ Bridge sistemi hazır!")
+                print("✅ Bridge system ready!")
             else:
-                print("❌ Bridge server başlatılamadı!")
+                print("❌ Bridge server failed to start!")
 
         except Exception as e:
-            print(f"❌ Bridge sistem hatası: {e}")
+            print(f"❌ Bridge system error: {e}")
             # Hata olsa bile uygulamaya devam et
             self.bridge_server = None
 
@@ -2675,7 +2675,7 @@ class MainWindow(QMainWindow):
         """Proxy'yi başlat ve hesabı aktif et"""
         try:
             # Mitmproxy'yi başlat
-            print(f"Proxy başlatılıyor ve {email} aktif ediliyor...")
+            print(f"Starting proxy and activating {email}...")
 
             # Progress dialog göster
             progress = QProgressDialog(_('proxy_starting_account').format(email), _('cancel'), 0, 0, self)
@@ -2717,23 +2717,23 @@ class MainWindow(QMainWindow):
                     progress.close()
 
                     self.status_bar.showMessage(_('proxy_started_account_activated').format(email), 5000)
-                    print(f"Proxy başarıyla başlatıldı ve {email} aktif edildi!")
+                    print(f"Proxy started successfully and {email} activated!")
                     return True
                 else:
                     progress.close()
-                    print("Windows proxy ayarları yapılandırılamadı")
+                    print("Windows proxy settings could not be configured")
                     self.proxy_manager.stop()
                     self.status_bar.showMessage(_('windows_proxy_config_failed'), 5000)
                     return False
             else:
                 progress.close()
-                print("Mitmproxy başlatılamadı")
+                print("Mitmproxy failed to start")
                 self.status_bar.showMessage(_('mitmproxy_start_failed'), 5000)
                 return False
         except Exception as e:
             if 'progress' in locals():
                 progress.close()
-            print(f"Proxy başlatma hatası: {e}")
+            print(f"Proxy startup error: {e}")
             self.status_bar.showMessage(_('proxy_start_error').format(str(e)), 5000)
             return False
 
@@ -2741,7 +2741,7 @@ class MainWindow(QMainWindow):
         """Proxy'yi başlat (eski metod - sadece proxy başlatma için)"""
         try:
             # Mitmproxy'yi başlat
-            print("Proxy başlatılıyor...")
+            print("Starting proxy...")
 
             # Progress dialog göster
             progress = QProgressDialog(_('proxy_starting'), _('cancel'), 0, 0, self)
@@ -2779,20 +2779,20 @@ class MainWindow(QMainWindow):
                     self.load_accounts()
 
                     self.status_bar.showMessage(f"Proxy başlatıldı: {proxy_url}", 5000)
-                    print("Proxy başarıyla başlatıldı!")
+                    print("Proxy started successfully!")
                 else:
                     progress.close()
-                    print("Windows proxy ayarları yapılandırılamadı")
+                    print("Windows proxy settings could not be configured")
                     self.proxy_manager.stop()
                     self.status_bar.showMessage(_('windows_proxy_config_failed'), 5000)
             else:
                 progress.close()
-                print("Mitmproxy başlatılamadı")
+                print("Mitmproxy failed to start")
                 self.status_bar.showMessage(_('mitmproxy_start_failed'), 5000)
         except Exception as e:
             if 'progress' in locals():
                 progress.close()
-            print(f"Proxy başlatma hatası: {e}")
+            print(f"Proxy startup error: {e}")
             self.status_bar.showMessage(_('proxy_start_error').format(str(e)), 5000)
 
     def stop_proxy(self):
@@ -2811,7 +2811,7 @@ class MainWindow(QMainWindow):
             # Aktif hesap refresh timer'ını durdur
             if hasattr(self, 'active_account_refresh_timer') and self.active_account_refresh_timer.isActive():
                 self.active_account_refresh_timer.stop()
-                print("🔄 Aktif hesap yenileme timer'ı durduruldu")
+                print("🔄 Active account refresh timer stopped")
 
             self.proxy_enabled = False
             self.proxy_start_button.setEnabled(True)
@@ -2936,12 +2936,12 @@ class MainWindow(QMainWindow):
 
             # Dosya var mı kontrol et
             if not os.path.exists(user_settings_path):
-                print(f"🔍 user_settings.json dosyası bulunamadı, {email} için API çağrısı yapılıyor...")
+                print(f"🔍 user_settings.json not found, calling API for {email}...")
                 self.fetch_and_save_user_settings(email)
             else:
-                print(f"✅ user_settings.json dosyası mevcut, API çağrısı atlanıyor")
+                print("✅ user_settings.json present, skipping API call")
         except Exception as e:
-            print(f"user_settings kontrol hatası: {e}")
+            print(f"user_settings check error: {e}")
 
     def fetch_and_save_user_settings(self, email):
         """GetUpdatedCloudObjects API çağrısı yapıp user_settings.json olarak kaydet"""
@@ -2959,7 +2959,7 @@ class MainWindow(QMainWindow):
                     break
 
             if not account_data:
-                print(f"❌ Hesap bulunamadı: {email}")
+                print(f"❌ Account not found: {email}")
                 return False
 
             access_token = account_data['stsTokenManager']['accessToken']
@@ -3398,15 +3398,15 @@ class MainWindow(QMainWindow):
                 with open("user_settings.json", 'w', encoding='utf-8') as f:
                     json.dump(user_settings_data, f, indent=2, ensure_ascii=False)
 
-                print(f"✅ user_settings.json dosyası başarıyla oluşturuldu ({email})")
+                print(f"✅ user_settings.json created successfully ({email})")
                 self.status_bar.showMessage(f"🔄 {email} için kullanıcı ayarları indirildi", 3000)
                 return True
             else:
-                print(f"❌ API isteği başarısız: {response.status_code} - {response.text}")
+                print(f"❌ API request failed: {response.status_code} - {response.text}")
                 return False
 
         except Exception as e:
-            print(f"user_settings fetch hatası: {e}")
+            print(f"user_settings fetch error: {e}")
             return False
 
     def notify_proxy_active_account_change(self):
@@ -3414,7 +3414,7 @@ class MainWindow(QMainWindow):
         try:
             # Proxy çalışıyor mu kontrol et
             if hasattr(self, 'proxy_manager') and self.proxy_manager.is_running():
-                print("📢 Proxy'ye aktif hesap değişikliği bildiriliyor...")
+                print("📢 Notifying proxy about active account change...")
 
                 # Dosya bazlı trigger sistemi - daha güvenli
                 import time
@@ -3422,15 +3422,15 @@ class MainWindow(QMainWindow):
                 try:
                     with open(trigger_file, 'w') as f:
                         f.write(str(int(time.time())))
-                    print("✅ Proxy trigger dosyası oluşturuldu")
+                    print("✅ Proxy trigger file created")
                 except Exception as e:
-                    print(f"Trigger dosyası oluşturma hatası: {e}")
+                    print(f"Trigger file creation error: {e}")
 
-                print("✅ Proxy'ye hesap değişikliği bildirildi")
+                print("✅ Proxy notified about account change")
             else:
-                print("ℹ️  Proxy çalışmıyor, hesap değişikliği bildirilemedi")
+                print("ℹ️  Proxy is not running, account change notification skipped")
         except Exception as e:
-            print(f"Proxy bildirim hatası: {e}")
+            print(f"Proxy notification error: {e}")
 
     def refresh_account_token(self, email, account_data):
         """Tekil hesabın tokenini yenile"""
@@ -3464,7 +3464,7 @@ class MainWindow(QMainWindow):
                 return self.account_manager.update_account_token(email, new_token_data)
             return False
         except Exception as e:
-            print(f"Token yenileme hatası: {e}")
+            print(f"Token refresh error: {e}")
             return False
 
     def check_proxy_status(self):
@@ -3501,7 +3501,7 @@ class MainWindow(QMainWindow):
                         banned_email = parts[0]
                         timestamp = parts[1]
 
-                        print(f"Ban bildirimi alındı: {banned_email} (zaman: {timestamp})")
+                        print(f"Ban notification received: {banned_email} (timestamp: {timestamp})")
 
                         # Tabloyu yenile
                         self.load_accounts(preserve_limits=True)
@@ -3511,7 +3511,7 @@ class MainWindow(QMainWindow):
 
                 # Dosyayı sil
                 os.remove(ban_notification_file)
-                print("Ban bildirim dosyası silindi")
+                print("Ban notification file removed")
 
         except Exception as e:
             # Hata durumunda sessizce devam et (dosya yoksa normal)
@@ -3524,7 +3524,7 @@ class MainWindow(QMainWindow):
             if not self.proxy_enabled:
                 if self.active_account_refresh_timer.isActive():
                     self.active_account_refresh_timer.stop()
-                    print("🔄 Aktif hesap yenileme timer'ı durduruldu (proxy kapalı)")
+                    print("🔄 Active account refresh timer stopped (proxy disabled)")
                 return
 
             # Aktif hesabı al
@@ -3546,19 +3546,19 @@ class MainWindow(QMainWindow):
                     break
 
             if not active_account_data:
-                print(f"❌ Aktif hesap bulunamadı: {active_email}")
+                print(f"❌ Active account not found: {active_email}")
                 return
 
             # Banlanmış hesabı atla
             if health_status == 'banned':
-                print(f"⛔ Aktif hesap banlanmış, atlanıyor: {active_email}")
+                print(f"⛔ Active account banned, skipping: {active_email}")
                 return
 
             # Token ve limit bilgilerini yenile
             self._refresh_single_active_account(active_email, active_account_data)
 
         except Exception as e:
-            print(f"Aktif hesap yenileme hatası: {e}")
+            print(f"Active account refresh error: {e}")
 
     def _refresh_single_active_account(self, email, account_data):
         """Tek bir aktif hesabın token'ini ve limitini yenile"""
@@ -3577,7 +3577,7 @@ class MainWindow(QMainWindow):
                 self.account_manager.update_account_health(email, 'unhealthy')
 
         except Exception as e:
-            print(f"Aktif hesap yenileme hatası ({email}): {e}")
+            print(f"Active account refresh error ({email}): {e}")
 
     def _update_active_account_limit(self, email):
         """Aktif hesabın limit bilgilerini güncelle"""
@@ -3596,14 +3596,14 @@ class MainWindow(QMainWindow):
                         limit_text = f"{used}/{total}"
 
                         self.account_manager.update_account_limit_info(email, limit_text)
-                        print(f"✅ Aktif hesap limiti güncellendi: {email} - {limit_text}")
+                        print(f"✅ Active account limit updated: {email} - {limit_text}")
                     else:
                         self.account_manager.update_account_limit_info(email, "N/A")
-                        print(f"⚠️ Aktif hesap limit bilgisi alınamadı: {email}")
+                        print(f"⚠️ Active account limit information unavailable: {email}")
                     break
 
         except Exception as e:
-            print(f"Aktif hesap limit güncelleme hatası ({email}): {e}")
+            print(f"Active account limit update error ({email}): {e}")
 
     def _get_account_limit_info(self, account_data):
         """Hesabın limit bilgilerini Warp API'den al"""
@@ -3712,13 +3712,13 @@ class MainWindow(QMainWindow):
                         return user_data['user']['requestLimitInfo']
             return None
         except Exception as e:
-            print(f"Limit bilgisi alma hatası: {e}")
+            print(f"Limit information retrieval error: {e}")
             return None
 
     def auto_renew_tokens(self):
         """Otomatik token yenileme - dakikada 1 kez çalışır"""
         try:
-            print("🔄 Otomatik token kontrol başlatılıyor...")
+            print("🔄 Starting automatic token check...")
 
             # Tüm hesapları al
             accounts = self.account_manager.get_accounts_with_health_and_limits()
@@ -3743,7 +3743,7 @@ class MainWindow(QMainWindow):
                     buffer_time = 1 * 60 * 1000  # 1 dakika buffer
                     if current_time >= (expiration_time - buffer_time):
                         expired_count += 1
-                        print(f"⏰ Token yakında dolacak: {email}")
+                        print(f"⏰ Token expiring soon: {email}")
 
                         # Token'ı yenile
                         if self.renew_single_token(email, account_data):
@@ -3753,7 +3753,7 @@ class MainWindow(QMainWindow):
                             print(f"❌ Token yenilenemedi: {email}")
 
                 except Exception as e:
-                    print(f"Token kontrol hatası ({email}): {e}")
+                    print(f"Token check error ({email}): {e}")
                     continue
 
             # Sonuç mesajı
@@ -3765,10 +3765,10 @@ class MainWindow(QMainWindow):
                 else:
                     self.show_status_message(f"⚠️ {expired_count} token yenilenemedi", 5000)
             else:
-                print("✅ Tüm tokenlar geçerli")
+                print("✅ All tokens are valid")
 
         except Exception as e:
-            print(f"Otomatik token yenileme hatası: {e}")
+            print(f"Automatic token renewal error: {e}")
             self.show_status_message("❌ Token kontrol hatası", 3000)
 
     def renew_single_token(self, email, account_data):
@@ -3820,11 +3820,11 @@ class MainWindow(QMainWindow):
 
                 return True
             else:
-                print(f"Token yenileme hatası: {response.status_code} - {response.text}")
+                print(f"Token refresh error: {response.status_code} - {response.text}")
                 return False
 
         except Exception as e:
-            print(f"Token yenileme hatası ({email}): {e}")
+            print(f"Token refresh error ({email}): {e}")
             return False
 
     def reset_status_message(self):
@@ -3887,9 +3887,9 @@ class MainWindow(QMainWindow):
             print(f"🔄 Bridge: Tablo yenileniyor - {email}")
             # Thread-safe sinyal emit et
             self.bridge_account_added.emit(email)
-            print("✅ Bridge: Tablo yenileme sinyali gönderildi")
+            print("✅ Bridge: Table refresh signal sent")
         except Exception as e:
-            print(f"❌ Bridge: Tablo yenileme hatası - {e}")
+            print(f"❌ Bridge: Table refresh error - {e}")
 
     def refresh_table_after_bridge_add(self, email):
         """Bridge sonrası tablo yenileme (ana thread'de çalışır)"""
@@ -3899,9 +3899,9 @@ class MainWindow(QMainWindow):
 
             # Kullanıcıya bildiri göster
             self.status_bar.showMessage(f"✅ Yeni hesap bridge ile eklendi: {email}", 5000)
-            print("✅ Tablo başarıyla yenilendi")
+            print("✅ Table refreshed successfully")
         except Exception as e:
-            print(f"❌ Ana thread tablo yenileme hatası: {e}")
+            print(f"❌ Main thread table refresh error: {e}")
 
     def closeEvent(self, event):
         """Uygulama kapanırken temizlik yap"""

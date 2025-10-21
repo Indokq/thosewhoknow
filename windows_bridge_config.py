@@ -35,17 +35,17 @@ class BridgeConfig:
     def setup_localhost_access(self):
         """Configure Windows for localhost access from extensions"""
         try:
-            print("🔧 Chrome extension manifest ile localhost erişimi...")
+            print("🔧 Configuring Chrome extension manifest for localhost access...")
 
-            # Chrome extension manifest'te externally_connectable kullanıyoruz
-            # Registry ayarı gerekmez, manifest yeterli
-            print("✅ Manifest-based localhost erişimi aktif")
-            print("📋 Extension manifest'te externally_connectable yapılandırması mevcut")
+            # We rely on externally_connectable in the Chrome extension manifest.
+            # No additional registry settings are required; the manifest is sufficient.
+            print("✅ Manifest-based localhost access is active")
+            print("📋 Extension manifest includes the externally_connectable configuration")
 
             return True
 
         except Exception as e:
-            print(f"❌ Localhost erişim ayarı hatası: {e}")
+            print(f"❌ Localhost access configuration error: {e}")
             return False
 
     def create_native_messaging_manifest(self):
@@ -65,7 +65,7 @@ class BridgeConfig:
                 ]
             }
 
-            # Manifest dosyasını kaydet
+            # Save manifest file
             manifest_dir = os.path.join(os.getenv('APPDATA'), 'WarpAccountManager')
             os.makedirs(manifest_dir, exist_ok=True)
 
@@ -73,11 +73,11 @@ class BridgeConfig:
             with open(manifest_path, 'w') as f:
                 json.dump(manifest, f, indent=2)
 
-            print(f"✅ Native messaging manifest oluşturuldu: {manifest_path}")
+            print(f"✅ Native messaging manifest created: {manifest_path}")
             return manifest_path
 
         except Exception as e:
-            print(f"❌ Manifest oluşturma hatası: {e}")
+            print(f"❌ Native messaging manifest creation error: {e}")
             return None
 
     def register_native_host(self):
@@ -91,85 +91,85 @@ class BridgeConfig:
 
             for registry_path in self.registry_paths:
                 try:
-                    # HKEY_CURRENT_USER'da kaydet (yönetici gerektirmez)
+                    # Store under HKEY_CURRENT_USER (does not require admin rights)
                     key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, registry_path)
                     winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, manifest_path)
                     winreg.CloseKey(key)
-                    print(f"✅ Native host kaydedildi: {registry_path}")
+                    print(f"✅ Native host registered: {registry_path}")
                     success = True
 
                 except Exception as e:
-                    print(f"⚠️  Registry kaydı hatası ({registry_path}): {e}")
+                    print(f"⚠️  Registry registration error ({registry_path}): {e}")
 
             return success
 
         except Exception as e:
-            print(f"❌ Native host kayıt hatası: {e}")
+            print(f"❌ Native host registration error: {e}")
             return False
 
     def setup_bridge_config(self):
         """Complete bridge configuration"""
-        print("🌉 Windows Bridge konfigürasyonu başlatılıyor...")
+        print("🌉 Starting Windows bridge configuration...")
 
-        # 1. Localhost erişim ayarları
+        # 1. Configure localhost access
         localhost_ok = self.setup_localhost_access()
 
-        # 2. Native messaging host kaydı (opsiyonel)
+        # 2. Native messaging host registration (optional)
         # native_ok = self.register_native_host()
 
         if localhost_ok:
-            print("✅ Bridge konfigürasyonu tamamlandı!")
-            print("\n📋 Sonraki adımlar:")
-            print("1. Chrome'u yeniden başlat")
-            print("2. Eklentiyi chrome://extensions/ sayfasından yükle")
-            print("3. Warp Account Manager'ı başlat")
+            print("✅ Bridge configuration completed!")
+            print("\n📋 Next steps:")
+            print("1. Restart Chrome")
+            print("2. Load the extension from chrome://extensions/")
+            print("3. Start Warp Account Manager")
             return True
         else:
-            print("❌ Bridge konfigürasyonu başarısız!")
+            print("❌ Bridge configuration failed!")
             return False
 
     def check_configuration(self):
         """Check if bridge is properly configured"""
         try:
-            print("🔍 Bridge konfigürasyon kontrol ediliyor...")
+            print("🔍 Checking bridge configuration...")
 
-            # Manifest-based konfigürasyon için her zaman True döndür
-            # Gerçek kontrol extension yüklendiğinde yapılacak
-            print("✅ Manifest-based bridge konfigürasyonu")
+            # Always return True for manifest-based configuration.
+            # Real verification happens when the extension is loaded.
+            print("✅ Manifest-based bridge configuration detected")
             return True
 
         except Exception as e:
-            print(f"❌ Konfigürasyon kontrol hatası: {e}")
+            print(f"❌ Bridge configuration check error: {e}")
             return False
 
     def remove_configuration(self):
         """Remove bridge configuration (cleanup)"""
         try:
-            print("🧹 Bridge konfigürasyonu temizleniyor...")
+            print("🧹 Cleaning up bridge configuration...")
 
-            # Registry temizliği
+            # Registry cleanup
             chrome_policies_path = r"SOFTWARE\Policies\Google\Chrome"
 
             try:
                 key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, chrome_policies_path, 0, winreg.KEY_SET_VALUE)
                 winreg.DeleteValue(key, "URLAllowlist")
                 winreg.CloseKey(key)
-                print("✅ Chrome policy temizlendi")
+                print("✅ Chrome policy entry removed")
             except FileNotFoundError:
-                print("⚠️  Chrome policy zaten mevcut değil")
+                print("⚠️  Chrome policy entry not found")
 
-            # Manifest dosyası temizliği
+            # Manifest file cleanup
             manifest_dir = os.path.join(os.getenv('APPDATA'), 'WarpAccountManager')
             manifest_path = os.path.join(manifest_dir, f"{self.app_name}.json")
 
             if os.path.exists(manifest_path):
                 os.remove(manifest_path)
-                print("✅ Manifest dosyası silindi")
+                print("✅ Manifest file removed")
 
             return True
 
         except Exception as e:
-            print(f"❌ Temizlik hatası: {e}")
+            print(f"❌ Cleanup error: {e}")
             return False
 
 
@@ -200,7 +200,7 @@ if __name__ == "__main__":
         elif action == "remove":
             remove_bridge()
         else:
-            print("Kullanım: python windows_bridge_config.py [setup|check|remove]")
+            print("Usage: python windows_bridge_config.py [setup|check|remove]")
     else:
-        # Varsayılan: setup
+        # Default: setup
         setup_bridge()

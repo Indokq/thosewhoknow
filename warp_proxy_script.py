@@ -16,20 +16,20 @@ from mitmproxy import http
 from mitmproxy.script import concurrent
 from languages import get_language_manager, _
 
-# SSL uyarılarını gizle
+# Suppress SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def randomize_uuid_string(uuid_str):
     """
-    UUID string'ini rastgele değiştir - harfler hexadecimal harflerle, sayılar rastgele sayılarla değiştirilir
-    Tire (-) karakterleri korunur, büyük/küçük harf formatı korunur
+    Randomize a UUID string - letters are replaced with hexadecimal letters, numbers with random digits
+    Hyphen (-) characters are kept, original casing is preserved
 
     Args:
-        uuid_str (str): UUID formatındaki string (örn: 4d22323e-1ce9-44c1-a922-112a718ea3fc)
+        uuid_str (str): UUID formatted string (e.g. 4d22323e-1ce9-44c1-a922-112a718ea3fc)
 
     Returns:
-        str: Rastgele değiştirilmiş UUID string
+        str: Randomized UUID string
     """
     hex_digits_lower = '0123456789abcdef'
     hex_digits_upper = '0123456789ABCDEF'
@@ -37,28 +37,28 @@ def randomize_uuid_string(uuid_str):
     result = []
     for char in uuid_str:
         if char == '-':
-            # Tire karakterini koru
+            # Keep the hyphen character
             result.append(char)
         elif char.isdigit():
-            # Sayıyı rastgele hexadecimal karakter ile değiştir (sayı veya a-f)
+            # Replace digits with random hexadecimal characters (0-9 or a-f)
             result.append(random.choice(hex_digits_lower))
         elif char in 'abcdef':
-            # Küçük hexadecimal harfi rastgele küçük hexadecimal harf ile değiştir
+            # Replace lowercase hexadecimal letters with random lowercase hexadecimal letters
             result.append(random.choice(hex_digits_lower))
         elif char in 'ABCDEF':
-            # Büyük hexadecimal harfi rastgele büyük hexadecimal harf ile değiştir
+            # Replace uppercase hexadecimal letters with random uppercase hexadecimal letters
             result.append(random.choice(hex_digits_upper))
         else:
-            # Diğer karakterleri olduğu gibi bırak (güvenlik için)
+            # Leave other characters untouched (for safety)
             result.append(char)
 
     return ''.join(result)
 
 
 def generate_experiment_id():
-    """Warp Experiment ID formatında UUID üret"""
-    # 931df166-756c-4d4c-b486-4231224bc531 formatında
-    # 8-4-4-4-12 hex karakter yapısı
+    """Generate a UUID in Warp Experiment ID format"""
+    # Format: 931df166-756c-4d4c-b486-4231224bc531
+    # Structure: 8-4-4-4-12 hex characters
     def hex_chunk(length):
         return ''.join(random.choice('0123456789abcdef') for _ in range(length))
 
@@ -75,12 +75,12 @@ class WarpProxyHandler:
         self.user_settings_cache = None
 
     def get_active_account(self):
-        """Aktif hesabı veritabanından al"""
+        """Retrieve the active account from the database"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            # Önce aktif hesabı al
+            # First fetch the active account
             cursor.execute('SELECT value FROM proxy_settings WHERE key = ?', ('active_account',))
             active_result = cursor.fetchone()
 
@@ -98,16 +98,16 @@ class WarpProxyHandler:
             conn.close()
             return None, None
         except Exception as e:
-            print(f"Aktif hesap alma hatası: {e}")
+            print(f"Active account lookup error: {e}")
             return None, None
 
     def update_active_token(self):
-        """Aktif hesabın token bilgilerini güncelle"""
+        """Update token information for the active account"""
         try:
-            print("🔍 Aktif hesap kontrol ediliyor...")
+            print("🔍 Checking active account...")
             email, account_data = self.get_active_account()
             if not account_data:
-                print("❌ Aktif hesap bulunamadı")
+                print("❌ Active account not found")
                 self.active_token = None
                 self.active_email = None
                 return False
@@ -117,17 +117,17 @@ class WarpProxyHandler:
             current_time = int(time.time() * 1000)
             token_expiry = account_data['stsTokenManager']['expirationTime']
 
-            # Token süresi 1 dakikadan az kaldıysa yenile
+            # Refresh the token if less than 1 minute remains
             if current_time >= (token_expiry - 60000):  # 1 dakika = 60000ms
-                print(f"Token yenileniyor: {email}")
+                print(f"Refreshing token: {email}")
                 if self.refresh_token(email, account_data):
-                    # Güncellenmiş verileri al
+                    # Fetch updated data
                     email, account_data = self.get_active_account()
                     if account_data:
                         self.active_token = account_data['stsTokenManager']['accessToken']
                         self.token_expiry = account_data['stsTokenManager']['expirationTime']
                         self.active_email = email
-                        print(f"Token yenilendi: {email}")
+                        print(f"Token refreshed: {email}")
                         return True
                 return False
             else:
@@ -136,48 +136,48 @@ class WarpProxyHandler:
                 self.active_email = email
 
                 if old_email != email:
-                    print(f"🔄 Aktif hesap değişti: {old_email} → {email}")
+                    print(f"🔄 Active account switched: {old_email} → {email}")
                 else:
-                    print(f"✅ Token aktif: {email}")
+                    print(f"✅ Token active: {email}")
                 return True
         except Exception as e:
-            print(f"Token güncelleme hatası: {e}")
+            print(f"Token update error: {e}")
             return False
 
     def check_account_change_trigger(self):
-        """Hesap değişiklik trigger dosyasını kontrol et"""
+        """Check trigger file signalling active account change"""
         try:
             trigger_file = "account_change_trigger.tmp"
             import os
 
             if os.path.exists(trigger_file):
-                # Dosyanın değiştirilme zamanını kontrol et
+                # Check file modification time
                 mtime = os.path.getmtime(trigger_file)
-                print(f"📁 Trigger dosyası bulundu - mtime: {mtime}, last_check: {self.last_trigger_check}")
+                print(f"📁 Trigger file detected - mtime: {mtime}, last_check: {self.last_trigger_check}")
                 if mtime > self.last_trigger_check:
-                    print("🔄 Hesap değişiklik trigger tespit edildi!")
+                    print("🔄 Account change trigger detected!")
                     self.last_trigger_check = mtime
 
-                    # Trigger dosyasını sil
+                    # Remove trigger file
                     try:
                         os.remove(trigger_file)
-                        print("🗑️  Trigger dosyası silindi")
+                        print("🗑️  Trigger file deleted")
                     except Exception as e:
-                        print(f"Trigger dosyası silinme hatası: {e}")
+                        print(f"Trigger file deletion error: {e}")
 
-                    # Token güncelle
-                    print("🔄 Token güncelleniyor...")
+                    # Update token
+                    print("🔄 Refreshing token information...")
                     self.update_active_token()
                     return True
                 else:
-                    print("⏸️  Trigger dosyası zaten işlenmiş, atlanıyor")
+                    print("⏸️  Trigger file already processed, skipping")
             return False
         except Exception as e:
-            print(f"Trigger kontrol hatası: {e}")
+            print(f"Trigger check error: {e}")
             return False
 
     def refresh_token(self, email, account_data):
-        """Firebase token yenileme"""
+        """Refresh Firebase token"""
         try:
             import requests
 
@@ -190,7 +190,7 @@ class WarpProxyHandler:
                 'refresh_token': refresh_token
             }
 
-            # Proxy kullanmadan direkt bağlan
+            # Connect without proxy
             proxies = {'http': None, 'https': None}
             response = requests.post(url, json=data, timeout=30, verify=False, proxies=proxies)
 
@@ -202,7 +202,7 @@ class WarpProxyHandler:
                     'expirationTime': int(time.time() * 1000) + (int(token_data['expires_in']) * 1000)
                 }
 
-                # Veritabanını güncelle
+                # Update database
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
                 cursor.execute('SELECT account_data FROM accounts WHERE email = ?', (email,))
@@ -222,16 +222,16 @@ class WarpProxyHandler:
                 return True
             return False
         except Exception as e:
-            print(f"Token yenileme hatası: {e}")
+            print(f"Token refresh error: {e}")
             return False
 
     def mark_account_as_banned(self, email):
-        """Hesabı banlanmış olarak işaretle"""
+        """Mark an account as banned"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            # Hesabın health_status'unu 'banned' olarak güncelle
+            # Update account health_status to 'banned'
             cursor.execute('''
                 UPDATE accounts SET health_status = 'banned', last_updated = CURRENT_TIMESTAMP
                 WHERE email = ?
@@ -239,90 +239,90 @@ class WarpProxyHandler:
             conn.commit()
             conn.close()
 
-            print(f"Hesap banlanmış olarak işaretlendi: {email}")
+            print(f"Account marked as banned: {email}")
 
-            # Aktif hesabı temizle (banlanmış hesap aktif kalamaz)
+            # Clear active account (a banned account cannot remain active)
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute('DELETE FROM proxy_settings WHERE key = ?', ('active_account',))
             conn.commit()
             conn.close()
 
-            # Handler'daki aktif hesap bilgilerini temizle
+            # Clear active account data in handler
             self.active_token = None
             self.active_email = None
             self.token_expiry = None
 
-            print("Banlanmış hesap aktif hesap listesinden çıkarıldı")
+            print("Banned account removed from active list")
 
-            # GUI'ye ban bildirimini gönder
+            # Notify GUI about ban
             self.notify_gui_about_ban(email)
             return True
 
         except Exception as e:
-            print(f"Hesap ban işaretleme hatası: {e}")
+            print(f"Account ban mark error: {e}")
             return False
 
     def notify_gui_about_ban(self, email):
-        """GUI'ye ban bildirimini dosya üzerinden gönder"""
+        """Send a ban notification to the GUI using a temp file"""
         try:
             import os
             import time
 
-            # Ban bildirim dosyası oluştur
+            # Create ban notification file
             ban_notification_file = "ban_notification.tmp"
             with open(ban_notification_file, 'w', encoding='utf-8') as f:
                 f.write(f"{email}|{int(time.time())}")
 
-            print(f"Ban bildirimi dosyası oluşturuldu: {ban_notification_file}")
+            print(f"Ban notification file created: {ban_notification_file}")
         except Exception as e:
-            print(f"Ban bildirimi gönderme hatası: {e}")
+            print(f"Ban notification error: {e}")
 
     def load_user_settings(self):
-        """user_settings.json dosyasını yükle"""
+        """Load user_settings.json"""
         try:
             import os
             if os.path.exists("user_settings.json"):
                 with open("user_settings.json", 'r', encoding='utf-8') as f:
                     self.user_settings_cache = json.load(f)
-                print("✅ user_settings.json dosyası başarıyla yüklendi")
+                print("✅ user_settings.json loaded successfully")
                 return True
             else:
-                print("⚠️ user_settings.json dosyası bulunamadı")
+                print("⚠️ user_settings.json not found")
                 self.user_settings_cache = None
                 return False
         except Exception as e:
-            print(f"user_settings.json yükleme hatası: {e}")
+            print(f"user_settings.json load error: {e}")
             self.user_settings_cache = None
             return False
 
     def refresh_user_settings(self):
-        """user_settings.json dosyasını yeniden yükle"""
-        print("🔄 user_settings.json yeniden yükleniyor...")
+        """Reload user_settings.json"""
+        print("🔄 Reloading user_settings.json...")
         return self.load_user_settings()
 
 # Global handler instance
 handler = WarpProxyHandler()
 
 def is_relevant_request(flow: http.HTTPFlow) -> bool:
-    """İsteğin bizi ilgilendirip ilgilendirmediğini kontrol et"""
+    """Determine whether the request should be handled"""
 
-    # Firebase token yenileme isteklerini User-Agent ile kontrol et ve hariç tut
+    # Exclude Firebase token refresh requests initiated by WarpAccountManager itself
     if ("securetoken.googleapis.com" in flow.request.pretty_host and
         flow.request.headers.get("User-Agent") == "WarpAccountManager/1.0"):
         return False
 
-    # WarpAccountManager'dan gelen istekleri kontrol et ve hariç tut
+    # Ignore requests originating from WarpAccountManager
     if flow.request.headers.get("X-Warp-Manager-Request") == "true":
         return False
 
-    # Sadece belirli domainleri işle
+    # Only process specific domains
     relevant_domains = [
         "app.warp.dev",
-        "dataplane.rudderstack.com"  # Bloklamak için
+        "dataplane.rudderstack.com"  # Blocked on purpose
     ]
 
-    # Warp ile ilgili olmayan istekleri sessizce geçir (internet erişimini engelleme)
+    # Let unrelated traffic pass silently
     if not any(domain in flow.request.pretty_host for domain in relevant_domains):
         return False
 
@@ -330,18 +330,18 @@ def is_relevant_request(flow: http.HTTPFlow) -> bool:
 
 @concurrent
 def request(flow: http.HTTPFlow) -> None:
-    """İstek yakalandığında çalışır"""
+    """Handle outbound requests"""
 
-    # İlgisiz istekleri hemen filtrele - sessizce geç (internet erişimine müdahale etme)
+    # Filter out irrelevant requests immediately
     if not is_relevant_request(flow):
-        # Warp ile ilgili olmayan tüm trafiği direkt geçir
+        # Forward all non-Warp traffic untouched
         return
 
     request_url = flow.request.pretty_url
 
-    # *.dataplane.rudderstack.com isteklerini blokla
+    # Block *.dataplane.rudderstack.com requests
     if "dataplane.rudderstack.com" in flow.request.pretty_host:
-        print(f"🚫 Rudderstack isteği bloklandı: {request_url}")
+        print(f"🚫 Rudderstack request blocked: {request_url}")
         flow.response = http.Response.make(
             204,  # No Content
             b"",
@@ -349,150 +349,150 @@ def request(flow: http.HTTPFlow) -> None:
         )
         return
 
-    print(f"🌐 Warp isteği: {flow.request.method} {flow.request.pretty_url}")
+    print(f"🌐 Warp request: {flow.request.method} {flow.request.pretty_url}")
 
-    # CreateGenericStringObject isteği tespiti - user_settings.json güncelleme trigger'ı
+    # Detect CreateGenericStringObject requests to trigger user_settings.json refresh
     if ("/graphql/v2?op=CreateGenericStringObject" in request_url and
         flow.request.method == "POST"):
-        print("🔄 CreateGenericStringObject isteği tespit edildi - user_settings.json güncelleniyor...")
+        print("🔄 CreateGenericStringObject request detected - refreshing user_settings.json...")
         handler.refresh_user_settings()
 
-    # Hesap değişiklik trigger kontrolü (her request'te)
+    # Check account change triggers for every request
     if handler.check_account_change_trigger():
-        print("🔄 Trigger tespit edildi ve token güncellendi!")
+        print("🔄 Trigger detected and token refreshed!")
 
-    # Aktif hesap bilgisini göster
-    print(f"📧 Şu anki aktif hesap: {handler.active_email}")
+    # Display currently active account
+    print(f"📧 Active account: {handler.active_email}")
 
-    # Her dakika token kontrolü yap
+    # Trigger token check every minute
     current_time = time.time()
-    if current_time - handler.last_token_check > 60:  # 60 saniye
-        print("⏰ Token kontrol zamanı geldi, güncelleniyor...")
+    if current_time - handler.last_token_check > 60:  # 60 seconds
+        print("⏰ Token check due, refreshing...")
         handler.update_active_token()
         handler.last_token_check = current_time
 
-    # Aktif hesap kontrolü
+    # Ensure an active account exists
     if not handler.active_email:
-        print("❓ Aktif hesap bulunamadı, token kontrol ediliyor...")
+        print("❓ Active account missing, checking token...")
         handler.update_active_token()
 
-    # Authorization header'ını değiştir
+    # Update Authorization header
     if handler.active_token:
         old_auth = flow.request.headers.get("Authorization", "Yok")
         new_auth = f"Bearer {handler.active_token}"
         flow.request.headers["Authorization"] = new_auth
 
-        print(f"🔑 Authorization header güncellendi: {handler.active_email}")
+        print(f"🔑 Authorization header updated for: {handler.active_email}")
 
-        # Token'ların gerçekten farklı olup olmadığını kontrol et
+        # Ensure the token actually changed
         if old_auth == new_auth:
-            print("   ⚠️  UYARI: Eski ve yeni token AYNI!")
+            print("   ⚠️  WARNING: Old and new tokens are identical!")
         else:
-            print("   ✅ Token başarıyla değiştirildi")
+            print("   ✅ Token replaced successfully")
 
-        # Token'ın son kısmını da göster
+        # Show token suffix for verification
         if len(handler.active_token) > 100:
-            print(f"   Token sonu: ...{handler.active_token[-20:]}")
+            print(f"   Token suffix: ...{handler.active_token[-20:]}")
 
     else:
-        print("❌ AKTİF TOKEN BULUNAMADI - HEADER DEĞİŞTİRİLMEDİ!")
-        print(f"   Aktif email: {handler.active_email}")
-        print(f"   Token durumu: {handler.active_token is not None}")
+        print("❌ NO ACTIVE TOKEN - HEADER NOT UPDATED!")
+        print(f"   Active email: {handler.active_email}")
+        print(f"   Token present: {handler.active_token is not None}")
 
-    # Tüm app.warp.dev istekleri için X-Warp-Experiment-Id header'ını kontrol et ve randomize et
+    # Randomize the X-Warp-Experiment-Id header for app.warp.dev requests
     existing_experiment_id = flow.request.headers.get("X-Warp-Experiment-Id")
-    if existing_experiment_id:
-        new_experiment_id = generate_experiment_id()
-        flow.request.headers["X-Warp-Experiment-Id"] = new_experiment_id
+    if existing_experiment_id and "app.warp.dev" in flow.request.pretty_host:
+        randomized_experiment_id = randomize_uuid_string(existing_experiment_id)
+        flow.request.headers["X-Warp-Experiment-Id"] = randomized_experiment_id
 
-        print(f"🧪 Experiment ID değiştirildi ({flow.request.path}):")
+        print(f"🧪 Experiment ID randomized ({flow.request.path}):")
+        print(f"   Previous: {existing_experiment_id}")
+        print(f"   Updated:  {randomized_experiment_id}")
 
 def responseheaders(flow: http.HTTPFlow) -> None:
-    """Response headers alındığında çalışır - streaming'i kontrol eder"""
-    # İlgisiz istekleri hemen filtrele - sessizce geç
+    """Handle response headers to manage streaming"""
     if not is_relevant_request(flow):
         return
 
-    # /ai/multi-agent endpoint'i için streaming'i etkinleştir
     if "/ai/multi-agent" in flow.request.path:
         flow.response.stream = True
-        print(f"[{time.strftime('%H:%M:%S')}] Streaming etkinleştirildi: {flow.request.pretty_url}")
+        print(f"[{time.strftime('%H:%M:%S')}] Streaming enabled: {flow.request.pretty_url}")
     else:
         flow.response.stream = False
 
 @concurrent
 def response(flow: http.HTTPFlow) -> None:
-    """Yanıt alındığında çalışır"""
+    """Handle inbound responses"""
 
-    # Firebase token yenileme isteklerini User-Agent ile kontrol et
+    # Ignore Firebase token refresh requests initiated by WarpAccountManager
     if ("securetoken.googleapis.com" in flow.request.pretty_host and
         flow.request.headers.get("User-Agent") == "WarpAccountManager/1.0"):
         return
 
-    # Sadece app.warp.dev domainini işle
+    # Process only app.warp.dev domain
     if "app.warp.dev" not in flow.request.pretty_host:
         return
 
-    # İlgisiz istekleri hemen filtrele - sessizce geç (internet erişimine müdahale etme)
+    # Filter irrelevant requests quietly
     if not is_relevant_request(flow):
         return
 
-    # WarpAccountManager'dan gelen istekleri hariç tut
+    # Exclude requests originating from WarpAccountManager
     if flow.request.headers.get("X-Warp-Manager-Request") == "true":
         return
 
-    print(f"📡 Warp yanıtı: {flow.response.status_code} - {flow.request.pretty_url}")
+    print(f"📡 Warp response: {flow.response.status_code} - {flow.request.pretty_url}")
 
-    # GetUpdatedCloudObjects isteği için cached response kullan
+    # Use cached response for GetUpdatedCloudObjects
     if ("/graphql/v2?op=GetUpdatedCloudObjects" in flow.request.pretty_url and
         flow.request.method == "POST" and
         flow.response.status_code == 200 and
         handler.user_settings_cache is not None):
-        print("🔄 GetUpdatedCloudObjects response'u cached veriler ile değiştiriliyor...")
+        print("🔄 Replacing GetUpdatedCloudObjects response with cached data...")
         try:
-            # Cached veriyi JSON string'e çevir
+            # Convert cached data to JSON string
             cached_response = json.dumps(handler.user_settings_cache, ensure_ascii=False)
 
-            # Response'u değiştir
+            # Replace response body
             flow.response.content = cached_response.encode('utf-8')
             flow.response.headers["Content-Length"] = str(len(flow.response.content))
             flow.response.headers["Content-Type"] = "application/json"
 
-            print("✅ GetUpdatedCloudObjects response'u başarıyla değiştirildi")
+            print("✅ GetUpdatedCloudObjects response replaced successfully")
         except Exception as e:
-            print(f"❌ Response değiştirme hatası: {e}")
+            print(f"❌ Response replacement error: {e}")
 
-    # /ai/multi-agent endpoint'inde 403 hatası - hesap banlanmış
+    # Treat 403 responses on /ai/multi-agent as account bans
     if "/ai/multi-agent" in flow.request.path and flow.response.status_code == 403:
-        print("⛔ 403 FORBIDDEN - Hesap banlanmış tespit edildi!")
+        print("⛔ 403 FORBIDDEN - Account appears to be banned!")
         if handler.active_email:
-            print(f"Banlanmış hesap: {handler.active_email}")
+            print(f"Banned account: {handler.active_email}")
             handler.mark_account_as_banned(handler.active_email)
         else:
-            print("Aktif hesap bulunamadı, ban işareti konulamadı")
+            print("Active account missing, unable to mark as banned")
 
-    # Eğer 401 hatası alındıysa token yenilemeyi dene
+    # Attempt token refresh on HTTP 401
     if flow.response.status_code == 401:
-        print("401 hatası alındı, token yenileniyor...")
+        print("401 received, refreshing token...")
         if handler.update_active_token():
-            print("Token yenilendi, isteği tekrar dene")
+            print("Token refreshed, retry the request")
 
-# Başlangıçta aktif hesabı yükle
+# Load active account on start
 def load(loader):
-    """Script başladığında çalışır"""
-    print("Warp Proxy Script başlatıldı")
-    print("Veritabanı bağlantısı kontrol ediliyor...")
+    """Executed when the script starts"""
+    print("Warp Proxy Script started")
+    print("Checking database connection...")
     handler.update_active_token()
     if handler.active_email:
-        print(f"Aktif hesap yüklendi: {handler.active_email}")
-        print(f"Token var: {handler.active_token is not None}")
+        print(f"Active account loaded: {handler.active_email}")
+        print(f"Token available: {handler.active_token is not None}")
     else:
-        print("Aktif hesap bulunamadı - Bir hesabı aktif etmeyi unutmayın!")
+        print("No active account found - remember to activate one!")
 
-    # user_settings.json dosyasını yükle
-    print("user_settings.json dosyası yükleniyor...")
+    # Load user_settings.json
+    print("Loading user_settings.json...")
     handler.load_user_settings()
 
 def done():
-    """Script durdurulduğunda çalışır"""
-    print("Warp Proxy Script durduruldu")
+    """Executed when the script stops"""
+    print("Warp Proxy Script stopped")

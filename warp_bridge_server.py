@@ -109,7 +109,7 @@ class BridgeRequestHandler(BaseHTTPRequestHandler):
                 if success:
                     print(f"✅ Bridge: Hesap eklendi - {account_data.get('email', 'Unknown')}")
 
-                    # Yanıtı hemen döndür, UI yenilemeyi arka planda tetikle
+                    # Return response immediately and trigger UI refresh in the background
                     self._send_json_response(200, {
                         'success': True,
                         'message': message,
@@ -124,10 +124,10 @@ class BridgeRequestHandler(BaseHTTPRequestHandler):
                                 daemon=True
                             ).start()
                         except Exception as e:
-                            print(f"⚠️  Tablo güncelleme hatası: {e}")
+                            print(f"⚠️  Table refresh error: {e}")
                     return
                 else:
-                    print(f"❌ Bridge: Hesap ekleme hatası - {message}")
+                    print(f"❌ Bridge: Account addition error - {message}")
                     self._send_json_response(400, {
                         'success': False,
                         'error': message
@@ -215,11 +215,11 @@ class WarpBridgeServer:
             self.server_thread = threading.Thread(target=self._run_server, daemon=True)
             self.server_thread.start()
 
-            print(f"🌉 Bridge Server başlatıldı: http://localhost:{self.port}")
+            print(f"🌉 Bridge Server started: http://localhost:{self.port}")
             return True
 
         except Exception as e:
-            print(f"❌ Bridge Server başlatma hatası: {e}")
+            print(f"❌ Bridge Server startup error: {e}")
             return False
 
     def _run_server(self):
@@ -228,7 +228,7 @@ class WarpBridgeServer:
             self.server.serve_forever()
         except Exception as e:
             if self.running:  # Only show error if we're supposed to be running
-                print(f"❌ Bridge Server çalışma hatası: {e}")
+                print(f"❌ Bridge Server runtime error: {e}")
 
     def stop(self):
         """Stop the bridge server"""
