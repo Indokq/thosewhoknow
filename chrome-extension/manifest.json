@@ -1,0 +1,39 @@
+{
+    "manifest_version": 3,
+    "name": "Warp Account Bridge",
+    "version": "1.0",
+    "description": "Bridge extension for Warp account management",
+    "permissions": [
+        "tabs",
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://app.warp.dev/logged_in/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://app.warp.dev/logged_in/remote*",
+                "https://app.warp.dev/logged_in*",
+                "https://app.warp.dev/login*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_end"
+        }
+    ],
+    "action": {
+        "default_title": "Warp Account Bridge"
+    },
+    "externally_connectable": {
+        "matches": [
+            "http://localhost:*/*"
+        ]
+    }
+}
