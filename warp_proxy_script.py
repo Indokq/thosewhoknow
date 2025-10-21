@@ -86,7 +86,7 @@ class WarpProxyHandler:
 
             if active_result:
                 active_email = active_result[0]
-                # Sonra hesap verilerini al
+                # Then get account data
                 cursor.execute('SELECT account_data FROM accounts WHERE email = ?', (active_email,))
                 account_result = cursor.fetchone()
 

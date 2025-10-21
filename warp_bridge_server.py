@@ -107,7 +107,7 @@ class BridgeRequestHandler(BaseHTTPRequestHandler):
                 success, message = self.account_manager.add_account(account_json)
 
                 if success:
-                    print(f"✅ Bridge: Hesap eklendi - {account_data.get('email', 'Unknown')}")
+                    print(f"✅ Bridge: Account added - {account_data.get('email', 'Unknown')}")
 
                     # Return response immediately and trigger UI refresh in the background
                     self._send_json_response(200, {

@@ -3532,7 +3532,7 @@ class MainWindow(QMainWindow):
             if not active_email:
                 return
 
-            print(f"🔄 Aktif hesap yenileniyor: {active_email}")
+            print(f"🔄 Refreshing active account: {active_email}")
 
             # Fetch account data from database
             accounts_with_health = self.account_manager.get_accounts_with_health_and_limits()
@@ -3565,7 +3565,7 @@ class MainWindow(QMainWindow):
         try:
             # Renew token
             if self.renew_single_token(email, account_data):
-                print(f"✅ Aktif hesap tokeni yenilendi: {email}")
+                print(f"✅ Active account token renewed: {email}")
 
                 # Update limit metadata
                 self._update_active_account_limit(email)
@@ -3573,7 +3573,7 @@ class MainWindow(QMainWindow):
                 # Reload table to reflect limit changes
                 self.load_accounts(preserve_limits=False)
             else:
-                print(f"❌ Aktif hesap tokeni yenilenemedi: {email}")
+                print(f"❌ Active account token could not be renewed: {email}")
                 self.account_manager.update_account_health(email, 'unhealthy')
 
         except Exception as e:
