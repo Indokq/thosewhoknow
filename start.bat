@@ -1,6 +1,14 @@
 @echo off
 :: Warp Account Manager Launcher - Enhanced Edition
-:: Automatic installation and startup script
+:: Automatic installation and startup script with admin elevation
+
+:: Check for admin rights and auto-elevate if needed
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Requesting administrator privileges...
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
 
 title Warp Account Manager - Installation and Startup
 chcp 65001 >nul 2>&1
@@ -11,20 +19,8 @@ echo    Warp Account Manager - Automatic Installation
 echo ====================================================
 echo.
 
-:: Administrator permission check
-echo [1/6] Checking administrator permissions...
-net session >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] This application must be run with administrator privileges!
-    echo.
-    echo Solution:
-    echo 1. Right-click on this file
-    echo 2. Click "Run as administrator"
-    echo.
-    pause
-    exit /b 1
-)
-echo [OK] Administrator privileges verified
+:: Administrator permission verified
+echo [1/6] Administrator privileges verified
 echo.
 
 :: Check if Python is installed
