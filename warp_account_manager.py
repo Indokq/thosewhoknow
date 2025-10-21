@@ -1835,7 +1835,7 @@ class AddAccountDialog(QDialog):
 
         # Step-by-step guide container
         steps_widget = QWidget()
-        steps_widget.setStyleSheet("QWidget { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; }")
+        steps_widget.setStyleSheet("QWidget { background-color: #151937; border: 1px solid #2d3b8f; border-radius: 8px; padding: 12px; }")
         steps_layout = QVBoxLayout()
         steps_layout.setSpacing(8)
 
@@ -1868,7 +1868,7 @@ class AddAccountDialog(QDialog):
         """Construct the information panel"""
         panel = QWidget()
         panel.setMaximumWidth(400)
-        panel.setStyleSheet("QWidget { background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 8px; }")
+        panel.setStyleSheet("QWidget { background-color: #151937; border: 1px solid #2d3b8f; border-radius: 8px; padding: 8px; }")
 
         layout = QVBoxLayout()
         layout.setContentsMargins(12, 12, 12, 12)
@@ -1892,7 +1892,7 @@ class AddAccountDialog(QDialog):
 
         steps_label = QLabel(steps_text)
         steps_label.setWordWrap(True)
-        steps_label.setStyleSheet("QLabel { background: white; padding: 8px; border-radius: 4px; }")
+        steps_label.setStyleSheet("QLabel { background-color: #0f1438; padding: 8px; border-radius: 4px; color: #c7d2fe; }")
         layout.addWidget(steps_label)
 
         # JavaScript kodu (gizli, sadece kopyala butonu)
@@ -2071,7 +2071,7 @@ class HelpDialog(QDialog):
     def create_section(self, title, content):
         """Create a help section widget"""
         section_widget = QWidget()
-        section_widget.setStyleSheet("QWidget { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; }")
+        section_widget.setStyleSheet("QWidget { background-color: #151937; border: 1px solid #2d3b8f; border-radius: 8px; padding: 15px; }")
 
         section_layout = QVBoxLayout()
         section_layout.setContentsMargins(0, 0, 0, 0)
@@ -2080,13 +2080,13 @@ class HelpDialog(QDialog):
         # Section header label
         title_label = QLabel(title)
         title_label.setFont(QFont("Arial", 12, QFont.Bold))
-        title_label.setStyleSheet("color: #333; margin-bottom: 5px;")
+        title_label.setStyleSheet("color: #a5b4fc; margin-bottom: 5px;")
         section_layout.addWidget(title_label)
 
         # Section content
         content_label = QLabel(content)
         content_label.setWordWrap(True)
-        content_label.setStyleSheet("color: #555; line-height: 1.4;")
+        content_label.setStyleSheet("color: #c7d2fe; line-height: 1.4;")
         section_layout.addWidget(content_label)
 
         section_widget.setLayout(section_layout)
@@ -2251,35 +2251,38 @@ class MainWindow(QMainWindow):
         self.language_combo.setFixedHeight(36)
         self.language_combo.setStyleSheet("""
             QComboBox {
-                background-color: #f5f5f5;
-                color: #666;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                padding: 4px 12px;
-                font-size: 11px;
-                font-weight: bold;
+                background-color: #1e2555;
+                color: #c7d2fe;
+                border: 1px solid #2d3b8f;
+                border-radius: 6px;
+                padding: 6px 12px;
+                font-size: 10pt;
+                font-weight: 600;
                 text-align: center;
             }
             QComboBox:hover {
-                background-color: #e8e8e8;
-                color: #333;
-                border-color: #bbb;
+                background-color: #2d3b8f;
+                color: #e0e7ff;
+                border-color: #4c51bf;
             }
             QComboBox::drop-down {
                 border: none;
-                width: 18px;
+                width: 20px;
             }
             QComboBox::down-arrow {
                 width: 10px;
                 height: 10px;
-                margin-right: 2px;
+                margin-right: 4px;
             }
             QComboBox QAbstractItemView {
-                background-color: #ffffff;
-                border: 1px solid #ddd;
-                selection-background-color: #000000;
-                font-weight: bold;
-                text-align: center;
+                background-color: #1a1f4d;
+                border: 1px solid #2d3b8f;
+                border-radius: 6px;
+                selection-background-color: #4c51bf;
+                selection-color: #ffffff;
+                color: #c7d2fe;
+                font-weight: 600;
+                padding: 4px;
             }
         """)
         self.language_combo.currentTextChanged.connect(self.change_language)
@@ -2290,18 +2293,18 @@ class MainWindow(QMainWindow):
         self.help_button.setFixedHeight(36)
         self.help_button.setStyleSheet("""
             QPushButton {
-                background-color: #f5f5f5;
-                color: #666;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                padding: 4px 12px;
-                font-size: 11px;
-                font-weight: normal;
+                background-color: #1e2555;
+                color: #c7d2fe;
+                border: 1px solid #2d3b8f;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 10pt;
+                font-weight: 600;
             }
             QPushButton:hover {
-                background-color: #e8e8e8;
-                color: #333;
-                border-color: #bbb;
+                background-color: #2d3b8f;
+                color: #e0e7ff;
+                border-color: #4c51bf;
             }
         """)
         self.help_button.setToolTip(_('help_title'))
@@ -2324,24 +2327,7 @@ class MainWindow(QMainWindow):
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setFocusPolicy(Qt.NoFocus)
 
-        # Modern tablo stilleri
-        self.table.setStyleSheet("""
-            QTableWidget {
-                background: #ffffff;
-                border: 1px solid #e2e8f0;
-                border-radius: 12px;
-                gridline-color: transparent;
-                selection-background-color: #dbeafe;
-                selection-color: #1e293b;
-                outline: none;
-            }
-            QTableWidget::item {
-                padding: 8px 12px;
-                border: none;
-                color: #334155;
-                font-size: 10pt;
-            }
-        """)
+        # Modern dark theme table styles removed - using style.qss instead
 
         # Enable context menu for table rows
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -2353,7 +2339,7 @@ class MainWindow(QMainWindow):
         header.setSectionResizeMode(1, QHeaderView.Stretch)  # Stretch email column
         header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Size status column to contents
         header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Size limit column to contents
-        header.resizeSection(0, 100)  # Provide room for action buttons
+        header.resizeSection(0, 90)  # Smaller width for centered button
         header.setFixedHeight(40)  # Taller header for modern look
 
         layout.addWidget(self.table)
@@ -2370,26 +2356,24 @@ class MainWindow(QMainWindow):
         for row, (email, account_json, health_status, limit_info) in enumerate(accounts):
             # Activation button rendered in column 0
             activation_button = QPushButton()
-            activation_button.setFixedSize(80, 30)  # Larger, modern look
+            activation_button.setFixedSize(70, 28)
             activation_button.setStyleSheet("""
                 QPushButton {
-                    border: 1px solid #e2e8f0;
-                    border-radius: 15px;
+                    border: 1px solid #2d3b8f;
+                    border-radius: 6px;
                     font-weight: 600;
-                    font-size: 10pt;
+                    font-size: 9pt;
                     text-align: center;
-                    padding: 4px 8px;
-                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                               stop: 0 #ffffff, stop: 1 #f8fafc);
+                    padding: 6px 10px;
+                    background-color: #1e2555;
+                    color: #c7d2fe;
                 }
                 QPushButton:hover {
-                    border-width: 2px;
-                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                               stop: 0 #f8fafc, stop: 1 #f1f5f9);
+                    background-color: #2d3b8f;
+                    border-color: #4c51bf;
                 }
                 QPushButton:pressed {
-                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                               stop: 0 #e2e8f0, stop: 1 #cbd5e1);
+                    background-color: #1a1f4d;
                 }
             """)
 
@@ -2401,10 +2385,9 @@ class MainWindow(QMainWindow):
                 activation_button.setText(_('button_banned'))
                 activation_button.setStyleSheet(activation_button.styleSheet() + """
                     QPushButton {
-                        background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                                   stop: 0 #f9fafb, stop: 1 #f3f4f6);
-                        color: #6b7280;
-                        border-color: #d1d5db;
+                        background-color: #151937;
+                        color: #64748b;
+                        border-color: #1e2555;
                         font-size: 9pt;
                     }
                 """)
@@ -2413,34 +2396,32 @@ class MainWindow(QMainWindow):
                 activation_button.setText(_('button_stop'))
                 activation_button.setStyleSheet(activation_button.styleSheet() + """
                     QPushButton {
-                        background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                                   stop: 0 #fef2f2, stop: 1 #fee2e2);
-                        color: #dc2626;
-                        border-color: #dc2626;
+                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                   stop:0 #ef4444, stop:1 #dc2626);
+                        color: #ffffff;
+                        border: none;
                         font-size: 9pt;
-                        font-weight: 600;
+                        font-weight: 700;
                     }
                     QPushButton:hover {
-                        background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                                   stop: 0 #fee2e2, stop: 1 #fecaca);
-                        border-color: #b91c1c;
+                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                   stop:0 #f87171, stop:1 #ef4444);
                     }
                 """)
             else:
                 activation_button.setText(_('button_start'))
                 activation_button.setStyleSheet(activation_button.styleSheet() + """
                     QPushButton {
-                        background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                                   stop: 0 #f0fdf4, stop: 1 #dcfce7);
-                        color: #16a34a;
-                        border-color: #16a34a;
+                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                   stop:0 #10b981, stop:1 #059669);
+                        color: #ffffff;
+                        border: none;
                         font-size: 9pt;
-                        font-weight: 600;
+                        font-weight: 700;
                     }
                     QPushButton:hover {
-                        background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                                   stop: 0 #dcfce7, stop: 1 #bbf7d0);
-                        border-color: #15803d;
+                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                   stop:0 #34d399, stop:1 #10b981);
                     }
                 """)
 
@@ -2483,27 +2464,32 @@ class MainWindow(QMainWindow):
             limit_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.table.setItem(row, 3, limit_item)
 
-            # Determine row background color
-            from PyQt5.QtGui import QColor
+            # Determine row styling based on account state
+            from PyQt5.QtGui import QColor, QBrush
 
             if health_status == 'banned':
-                # Banned account: light gray background
-                color = QColor(156, 163, 175, 60)  # gray-400 with low opacity
+                # Banned account: darker background with muted text
+                bg_color = QColor(30, 37, 85, 40)  # Very subtle dark overlay
+                text_color = QColor(148, 163, 184)  # Lighter gray for better readability
             elif email == active_account:
                 # Active account: blue highlight
-                color = QColor(59, 130, 246, 80)  # blue-500 with opacity
+                bg_color = QColor(59, 130, 246, 60)  # blue-500 with moderate opacity
+                text_color = QColor(255, 255, 255)  # Pure white for contrast
             elif health_status == 'unhealthy':
                 # Unhealthy account: red highlight
-                color = QColor(239, 68, 68, 80)  # red-500 with opacity
+                bg_color = QColor(239, 68, 68, 60)  # red-500 with moderate opacity
+                text_color = QColor(254, 226, 226)  # Light red tint
             else:
-                # Default state: transparent background
-                color = QColor(255, 255, 255, 0)  # transparent
+                # Default state: transparent background with high-contrast text
+                bg_color = QColor(255, 255, 255, 0)  # transparent
+                text_color = QColor(224, 231, 255)  # Bright text for readability
 
-            # Apply color to all data columns (skip button column)
+            # Apply styling to all data columns (skip button column)
             for col in range(1, 4):
                 item = self.table.item(row, col)
                 if item:
-                    item.setBackground(color)
+                    item.setBackground(bg_color)
+                    item.setForeground(QBrush(text_color))
 
     def toggle_account_activation(self, email):
         """Toggle account activation and start proxy if needed"""
